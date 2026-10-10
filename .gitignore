@@ -229,3 +229,4 @@ data/processed/*
 !data/processed/.gitkeep
 .databricks/
 .streamlit/secrets.toml
+.vscode/

@@ -24,7 +24,7 @@ FROM `${catalog}`.`${schema}`.`silver_reviewer_decisions`
 WHERE decision_id NOT IN (SELECT decision_id FROM `${catalog}`.`${schema}`.`ops_reviewer_decisions`);
 
 CREATE OR REPLACE VIEW `${catalog}`.`${schema}`.`gold_agent_activity`
-COMMENT 'Agent, tool, reviewer, adapter, and system activity (summaries only; no prompts or reasoning).' AS
+COMMENT 'Agent, tool, reviewer, adapter, and system activity (summaries only, no prompts or reasoning).' AS
 SELECT activity_id, run_id, loan_id, actor, step, tool_name, input_summary, output_summary,
        CAST(duration_ms AS DOUBLE) AS duration_ms, CAST(success AS BOOLEAN) AS success, error,
        CAST(created_at AS TIMESTAMP) AS created_at

@@ -6,6 +6,7 @@ Bronze uses Spark's CSV reader on the Unity Catalog volume; Silver/Gold use the 
 from __future__ import annotations
 
 import json
+import re
 from datetime import date, datetime
 from pathlib import Path
 
@@ -142,8 +143,9 @@ def build_gold(spark, settings, sql_dir: str | None = None) -> dict:
 
 def run_sql_file(spark, settings, path: Path) -> int:
     text = path.read_text(encoding="utf-8").replace("${catalog}", settings.catalog).replace("${schema}", settings.schema)
-    statements = [s.strip() for s in text.split(";") if s.strip() and not all(
-        line.strip().startswith("--") or not line.strip() for line in s.strip().splitlines())]
+    # Statements are separated by a semicolon at end of line (string literals must not end a line with ';').
+    body = "\n".join(line for line in text.splitlines() if not line.strip().startswith("--"))
+    statements = [s.strip() for s in re.split(r";\s*(?:\n|$)", body) if s.strip()]
     for statement in statements:
         spark.sql(statement)
     return len(statements)
