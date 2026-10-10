@@ -151,4 +151,4 @@ does not change rules, scoring, tools, or UI.
 - App service principal receives least-privilege UC grants on one schema plus CAN_USE / CAN_QUERY on the
   warehouse and model endpoint.
 - Activity traces store summarized tool inputs/outputs only; no prompts, secrets, or chain-of-thought.
-- SQL writes use parameterized statements.
+- SQL writes from the app use escaped string literals in `MERGE` statements (all operational columns are strings); the pipeline writes through Spark DataFrames.

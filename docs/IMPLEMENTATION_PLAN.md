@@ -5,13 +5,21 @@ Status legend: ✅ done · 🔄 in progress · ⏳ planned. Each stage keeps the
 | Stage | Scope | Deliverables | Tests | Status |
 |-------|-------|--------------|-------|--------|
 | 1 | Document and design | `README.md`, 16 docs, ADRs, config | — | ✅ |
-| 2 | Synthetic data + manifest | `src/data_generation`, `data/generated/*.csv` | `tests/unit/test_data_generation.py` | ⏳ |
-| 3 | Medallion foundation | `src/ingestion`, `src/transformations`, `sql/*.sql`, notebooks 01–04 | `tests/integration/test_pipeline.py` | ⏳ |
-| 4 | Deterministic logic + tools | `src/rules`, `src/scoring`, `src/verification`, `src/tools`, engine | unit tests per module, `test_scenario_manifest.py` | ⏳ |
-| 5 | Agent + tracing | `src/agents`, `src/services/activity.py`, `tracing.py` | `test_agents.py`, `test_agent_tools_interaction.py` | ⏳ |
-| 6 | Review, adapter, verification | `review_service`, `action_service`, `refresh_service`, `src/adapters` | `test_review_action.py`, `test_adapter.py`, e2e | ⏳ |
-| 7 | API + App | `src/api`, `app/` | `test_api.py` | ⏳ |
-| 8 | Evaluation, reset, neutrality, deployment | `src/evaluation`, `src/quality`, notebooks 05–07, scripts, app deployment | `test_evaluation.py`, `test_customer_neutrality.py` | ⏳ |
+| 2 | Synthetic data + manifest | `src/data_generation`, `data/generated/*.csv` | `tests/unit/test_data_generation.py` | ✅ |
+| 3 | Medallion foundation | `src/ingestion`, `src/transformations`, `sql/*.sql`, notebooks 01–04 | `tests/integration/test_pipeline.py` | ✅ |
+| 4 | Deterministic logic + tools | `src/rules`, `src/scoring`, `src/verification`, `src/tools`, engine | unit tests per module, `test_scenario_manifest.py` | ✅ |
+| 5 | Agent + tracing | `src/agents`, `src/services/activity.py`, `tracing.py` | `test_agents.py`, `test_agent_tools_interaction.py` | ✅ |
+| 6 | Review, adapter, verification | `review_service`, `action_service`, `refresh_service`, `src/adapters` | `test_review_action.py`, `test_adapter.py`, e2e | ✅ |
+| 7 | API + App | `src/api`, `app/` | `test_api.py` | ✅ |
+| 8 | Evaluation, reset, neutrality, deployment | `src/evaluation`, `src/quality`, notebooks 05–07, scripts, app deployment | `test_evaluation.py`, `test_customer_neutrality.py` | ✅ |
+
+## Verification status (2026-10-10)
+
+- `pytest`: 127 tests pass (unit, integration, end-to-end); scenario manifest rule accuracy 100%.
+- Customer-neutrality scan: 0 findings.
+- Databricks: serverless job `lsi-pipeline` succeeded end to end (generate, bronze, silver, gold, UC tools, evaluation).
+- Databricks App `loan-servicing-intelligence` deployed from the Git folder (Databricks SQL backend, LLM agent in auto mode).
+- LLM agent verified against `databricks-claude-sonnet-5-5` (tool selection, recommendation, Ask the Agent, briefing).
 
 ## Engineering conventions
 

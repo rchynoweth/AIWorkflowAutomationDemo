@@ -96,6 +96,12 @@ databricks apps stop   loan-servicing-intelligence
 - **Data refresh:** re-run the job, or use the in-app Refresh (applies adapter writes, verifies).
 - **Reset:** in-app Reset demo, or run `07_reset_demo`.
 - **Logs:** App → Logs tab; job run output; `ops_agent_activity`; MLflow experiment.
+- **App creation error "Failed to create app service principal due to unexpected error":** observed as a
+  transient platform error during initial deployment; delete the failed app and create it again (the script is
+  idempotent). Escalate to an account admin if it persists.
+- **Model errors "does not support the temperature parameter":** keep `agent.temperature: null` (omitted).
+- **First load:** the app reads Silver and operational tables through the warehouse on first session
+  (~30-60 s from a cold warehouse); later interactions are in-memory.
 - **Permissions troubleshooting:** app errors mentioning `PERMISSION_DENIED` → re-run the grants step;
   model errors → check the serving-endpoint resource permission.
 

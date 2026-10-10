@@ -86,7 +86,7 @@ assigned parties, pending actions, latest verification, milestone state.
 ### `GET /api/loans/{loan_id}/events`
 Chronological timeline including proposed (pending recommendation), submitted (pending action), failed and
 verified markers: `[{event_id, event_type, milestone_type, event_date, followup_date, completed_date, status,
-display_state, source, event_note}]`. `display_state` ∈ `COMPLETED, CURRENT, UPCOMING, DUE, OVERDUE,
+display_state, source, event_note}]`. `display_state` ∈ `COMPLETED, CURRENT, UPCOMING, SCHEDULED, DUE, OVERDUE,
 PROPOSED, SUBMITTED, FAILED, VERIFIED, HISTORY`.
 
 ### `GET /api/loans/{loan_id}/recommendations`

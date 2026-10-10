@@ -56,6 +56,11 @@ def main() -> None:
     try:
         app = w.apps.get(APP_NAME)
         print(f"App exists: {app.url}")
+        deadline = time.time() + 1200
+        while app.compute_status and app.compute_status.state.value in ("STARTING", "STOPPING") \
+                and time.time() < deadline:
+            time.sleep(10)  # updates are only accepted while compute is ACTIVE or STOPPED
+            app = w.apps.get(APP_NAME)
         app = w.apps.update(name=APP_NAME, app=apps.App(name=APP_NAME, description=description, resources=resources))
     except Exception as exc:  # noqa: BLE001
         if "does not exist" not in str(exc).lower() and "not found" not in str(exc).lower():

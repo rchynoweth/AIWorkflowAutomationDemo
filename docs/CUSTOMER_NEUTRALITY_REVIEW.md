@@ -34,8 +34,12 @@ outbound files present under `data/` at scan time.
 | Run | Date | Files scanned | Findings | Result |
 |-----|------|---------------|----------|--------|
 | Initial (design docs) | 2026-10-10 | Docs + config | 0 | Pass |
+| Final validation (full repository incl. generated data) | 2026-10-10 | 140+ text files | 0 | Pass |
 
-*(Updated by the final validation run — see the bottom of this document.)*
+False positives resolved during validation: public documentation links in the standard Python `.gitignore`
+template were allowlisted; code placeholders (`http://{host}:{port}`) are ignored; the scanner's own pattern
+definitions and detection tests are exempt from pattern checks. A personal IDE settings file was removed from
+version control and ignored.
 
 ## References removed
 

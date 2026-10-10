@@ -16,7 +16,7 @@
 |---------|-----------|
 | Priority | CRITICAL red, HIGH orange, MEDIUM amber, LOW slate |
 | Health | Healthy green, Watch blue, Action Required amber, Critical red |
-| Timeline states | COMPLETED grey-green, CURRENT blue, UPCOMING teal, DUE amber, OVERDUE red, PROPOSED purple (dashed), SUBMITTED indigo, FAILED dark red, VERIFIED green check |
+| Timeline states | COMPLETED grey-green, CURRENT blue, UPCOMING teal, SCHEDULED slate (open follow-up beyond look-ahead), DUE amber, OVERDUE red, PROPOSED purple (dashed), SUBMITTED indigo, FAILED dark red, VERIFIED green check |
 | AI content | Labeled "Agent" with a sparkle icon and the agent mode (LLM / deterministic) |
 | Deterministic facts | Labeled "Rule" with the rule ID |
 
