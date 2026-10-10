@@ -6,23 +6,24 @@ import streamlit as st
 from app.components.styles import esc
 
 KPIS = [
-    ("active_loans", "Active Loans", None),
-    ("need_attention", "Need Attention", "#B54708"),
-    ("upcoming", "Upcoming", "#0E7490"),
-    ("overdue", "Overdue", "#B42318"),
-    ("missing_followup", "Missing Follow-Up", "#B54708"),
+    ("active_loans", "Active loans", None),
+    ("need_attention", "Need attention", "#B54708"),
     ("critical", "Critical", "#B42318"),
-    ("recommendations_awaiting_approval", "Awaiting Approval", "#6941C6"),
-    ("approved_today", "Approved Today", "#067647"),
-    ("verification_failures", "Verification Failures", "#7A271A"),
+    ("recommendations_awaiting_approval", "Awaiting approval", "#6941C6"),
+    ("verification_failures", "Failed verification", "#7A271A"),
 ]
 
 
 def render(summary: dict) -> None:
-    for row in (KPIS[:5], KPIS[5:]):
-        cols = st.columns(len(row))
-        for col, (key, label, color) in zip(cols, row):
-            style = f' style="color:{color}"' if color else ""
-            col.markdown(f'<div class="lsi-card"><div class="label">{esc(label)}</div>'
-                         f'<div class="value"{style}>{summary.get(key, 0):,}</div></div>', unsafe_allow_html=True)
-        st.write("")
+    cols = st.columns(len(KPIS))
+    for col, (key, label, color) in zip(cols, KPIS):
+        style = f' style="color:{color}"' if color else ""
+        col.markdown(f'<div class="lsi-card"><div class="label">{esc(label)}</div>'
+                     f'<div class="value"{style}>{summary.get(key, 0):,}</div></div>', unsafe_allow_html=True)
+    with st.expander("More metrics"):
+        more = [("Upcoming", "upcoming"), ("Due today", "due"), ("Overdue", "overdue"),
+                ("Missing follow-up", "missing_followup"), ("Data exceptions", "data_exceptions"),
+                ("Approved today", "approved_today"), ("Awaiting verification", "pending_actions")]
+        cols = st.columns(len(more))
+        for col, (label, key) in zip(cols, more):
+            col.metric(label, f"{summary.get(key, 0):,}")

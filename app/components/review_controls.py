@@ -36,9 +36,8 @@ def render(rec: dict | None, state: dict) -> None:
         st.error(f"Not approved — revalidation failed: {error}")
     if not rec or rec.get("status") != "PENDING_REVIEW":
         return
-    st.markdown("#### Specialist review")
-    st.caption("The agent only prepares proposals. Approval revalidates currency, duplicates, pending actions, "
-               "fields, and allowed actions before any outbound event is created.")
+    st.markdown("#### ✋ Your decision")
+    st.caption("Nothing is sent until you approve. Approval re-checks the proposal before an outbound event is created.")
     tabs = st.tabs(["Approve", "Edit", "Reject", "Defer", "Escalate"])
     with tabs[0]:
         if st.button(f"Approve {rec['recommended_action']}", type="primary", key="approve",

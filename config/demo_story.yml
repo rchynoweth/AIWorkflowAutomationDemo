@@ -1,0 +1,123 @@
+# Demo storyline and presenter talk track (shown in the app when "Presenter notes" is on).
+# Edit freely; no code changes needed. All data in the demo is synthetic.
+
+story:
+  title: "From one loan at a time to the whole portfolio"
+  promise: >-
+    Agents do the investigative work. People make the consequential decisions.
+    The servicing platform stays the System of Record.
+  chapters:
+    - id: scene
+      title: "Set the scene"
+      page: how_it_works
+      minutes: 2
+      goal: "Frame the problem and the operating principle."
+      say:
+        - "Today a specialist opens one loan at a time, reads the history, works out the milestone, checks dates, and keys follow-ups by hand."
+        - "That doesn't scale, and urgent work is found late. We flip it: the platform watches every loan, every day."
+        - "Three roles: deterministic rules find the facts, an AI agent investigates and drafts, a person decides."
+      click: "Walk the architecture diagram, then the 'Who does what' table."
+    - id: glance
+      title: "The portfolio at a glance"
+      page: home
+      minutes: 2
+      goal: "Show portfolio-wide monitoring and the AI briefing."
+      say:
+        - "Every active loan was evaluated this morning. These numbers are calculated by rules, not typed in."
+        - "The briefing was written by the agent, but only from the facts in the expander. If it invents a number, we reject it automatically."
+      click: "Point at Need Attention and Critical, read one briefing bullet, open the facts expander."
+    - id: queue
+      title: "Work arrives prioritized"
+      page: priority_queue
+      minutes: 2
+      goal: "Specialists receive work instead of searching for it."
+      say:
+        - "This is the specialist's day, ranked. Every row says why it's here."
+        - "The score is explainable: points for the condition, days overdue, milestone severity, and so on. All configurable."
+      click: "Hover the 'Why prioritized' column, then open LSI-SYN-000005."
+    - id: investigate
+      title: "Investigate one loan"
+      page: loan_360
+      loan_id: LSI-SYN-000005
+      minutes: 2
+      goal: "Show the deterministic facts and the event timeline."
+      say:
+        - "Title review follow-up is 18 days overdue. That's a rule fact, with a rule ID, not an AI opinion."
+        - "The timeline shows what happened and where we are."
+      click: "Overview tab, then Events tab."
+    - id: agent
+      title: "The agent does the legwork"
+      page: loan_360
+      loan_id: LSI-SYN-000005
+      minutes: 3
+      goal: "Agent investigates with approved tools and proposes an allowed action."
+      say:
+        - "Click Run agent. It decides which tools to call: context, milestone, duplicates, pending actions, prior rejections, score, allowed actions."
+        - "It can only recommend from the allowed list, it cannot change the score, and it states what it is unsure about."
+        - "It drafted the note and the outreach message. Nothing has been sent."
+      click: "Agent tab → Run agent analysis → expand Evidence and Tool calls. Then Ask: 'Why is this loan prioritized?'"
+    - id: decide
+      title: "A person decides"
+      page: loan_360
+      loan_id: LSI-SYN-000005
+      minutes: 2
+      goal: "Human-in-the-loop approval with revalidation."
+      say:
+        - "The specialist can approve, edit, reject, defer, or escalate. Let's edit the date and approve."
+        - "On approval we re-check everything: is the recommendation still current, any duplicate, any pending action, is the action still allowed."
+      click: "Edit → change follow-up date → Approve with edits."
+    - id: verify
+      title: "Execute and verify"
+      page: loan_360
+      loan_id: LSI-SYN-000005
+      minutes: 2
+      goal: "Controlled outbound event, simulated System of Record, verification on refresh."
+      say:
+        - "This is the outbound event in the format the servicing system expects. We submit it through an adapter."
+        - "We don't trust the adapter's 'OK'. On the next data refresh we check the event really landed, field by field."
+      click: "Submit via synthetic adapter → Refresh source & verify → status VERIFIED; loan leaves the queue."
+    - id: failure
+      title: "When it goes wrong"
+      page: loan_360
+      loan_id: LSI-SYN-000004
+      minutes: 2
+      goal: "Failures come back to the queue automatically."
+      say:
+        - "This loan's adapter is configured to fail. Watch what happens."
+        - "The failure becomes a new condition, the score goes up, and it is back in the queue with a 'retry' recommendation."
+      click: "Run agent → Approve → Submit → see FAILED and VERIFICATION_FAILURE."
+    - id: trust
+      title: "Trust and quality"
+      page: evaluation
+      minutes: 2
+      goal: "Rules and agent are measured separately; everything is traced."
+      say:
+        - "Rule quality must be 100% against known scenarios. Agent quality is measured separately: did it pick sensible, allowed actions, with evidence?"
+        - "Reviewer edits and rejections are signals for improvement, but nothing changes automatically."
+      click: "Show the two sections, then Agent Activity for the trace."
+    - id: close
+      title: "Close"
+      page: how_it_works
+      minutes: 1
+      goal: "Restate the principle."
+      say:
+        - "Agents do the investigative work, people stay accountable, and the servicing platform remains the System of Record."
+        - "Everything you saw is synthetic and runs on serverless Databricks."
+
+page_notes:
+  home:
+    - "Lead with scale: every active loan evaluated, no manual searching."
+    - "The briefing is AI-written but fact-checked against deterministic numbers."
+  priority_queue:
+    - "Work arrives ranked with a reason. Open a HIGH or CRITICAL loan."
+  loan_360:
+    - "Facts come from rules (blue). The agent's proposal is purple. Nothing executes without your decision."
+    - "Suggested loans: LSI-SYN-000005 (main path), LSI-SYN-000004 (configured failure), LSI-SYN-000019 (looks urgent, already covered)."
+  portfolio:
+    - "The whole synthetic book. Use search or filters, click a row to open Loan 360."
+  agent_activity:
+    - "Every tool call is logged with summarized inputs and outputs, never prompts or hidden reasoning."
+  evaluation:
+    - "Two different questions: are the rules right (must be 100%), and is the agent helpful (measured over time)?"
+  how_it_works:
+    - "Use this page to set the scene and to answer architecture questions."

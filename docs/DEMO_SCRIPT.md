@@ -23,6 +23,10 @@ Key loans:
 
 ## Script
 
+The app opens on **Demo Story**, which contains this storyline as ten clickable chapters with talk track
+(`config/demo_story.yml`). Click **Open** on each chapter, or **Next chapter** in the banner at the top of each
+page. Turn presenter notes off in the sidebar when sharing the screen with notes hidden.
+
 1. **Open Home — portfolio-wide monitoring.** "Instead of opening loans one at a time, every active loan is
    evaluated every cycle by deterministic, configurable rules." Point to the synthetic badge.
 2. **Portfolio metrics and AI briefing.** Walk the KPI cards and health segments; click **Critical**. Read

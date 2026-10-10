@@ -4,6 +4,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
+from app.components.talk_track import active_chapter_banner, notes
 from app.state import ApiError, get_client
 
 
@@ -15,7 +16,9 @@ def _metrics(metrics: dict, keys: list[tuple[str, str]], pct: bool = True) -> No
 
 
 def render() -> None:
-    st.markdown("### Evaluation")
+    active_chapter_banner("evaluation")
+    st.markdown("## Evaluation")
+    notes("evaluation")
     st.warning("All metrics on this page are computed on **synthetic data** and demonstrate methodology, not "
                "real-world performance.", icon=":material/science:")
     client = get_client()
@@ -30,10 +33,11 @@ def render() -> None:
     scen = pd.DataFrame(data["scenarios"])
     if not scen.empty:
         scen["passed"] = scen[[c for c in scen.columns if c.startswith("passed_")]].all(axis=1)
-        st.dataframe(scen[["scenario_id", "loan_id", "scenario_type", "expected_condition", "actual_condition",
-                           "expected_priority", "actual_priority", "expected_action", "actual_action",
-                           "expected_verification", "actual_verification", "attention_score", "passed"]],
-                     hide_index=True, use_container_width=True, height=420)
+        with st.expander("Scenario details"):
+            st.dataframe(scen[["scenario_id", "loan_id", "scenario_type", "expected_condition", "actual_condition",
+                             "expected_priority", "actual_priority", "expected_action", "actual_action",
+                             "expected_verification", "actual_verification", "attention_score", "passed"]],
+                       hide_index=True, use_container_width=True, height=420)
 
     st.markdown("#### 2 · Agent quality")
     c1, c2 = st.columns([3, 1])

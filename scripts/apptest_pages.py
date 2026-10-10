@@ -11,7 +11,7 @@ os.environ.setdefault("LSI_REPOSITORY_BACKEND", "local")
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
 failures = 0
-for page in ["home", "portfolio", "priority_queue", "loan_360", "agent_activity", "evaluation"]:
+for page in ["story", "how_it_works", "home", "portfolio", "priority_queue", "loan_360", "agent_activity", "evaluation"]:
     script = f"""
 import sys; sys.path.insert(0, r"{ROOT}")
 import streamlit as st

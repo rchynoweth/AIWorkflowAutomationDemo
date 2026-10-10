@@ -5,11 +5,14 @@ import pandas as pd
 import streamlit as st
 
 from app.components import activity_trace
+from app.components.talk_track import active_chapter_banner, notes
 from app.state import get_client
 
 
 def render() -> None:
-    st.markdown("### Agent Activity")
+    active_chapter_banner("agent_activity")
+    st.markdown("## Agent activity")
+    notes("agent_activity")
     st.caption("Summarized inputs and outputs only. Secrets, credentials, prompts, and model reasoning are never "
                "recorded or displayed.")
     client = get_client()

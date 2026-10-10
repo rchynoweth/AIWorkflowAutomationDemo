@@ -22,8 +22,8 @@ CSS = """
             color:#fff; letter-spacing:0.02em; white-space:nowrap;}
 .lsi-synthetic {background:#FEF0C7; color:#7A2E0E; border:1px solid #FEC84B; padding:3px 10px; border-radius:12px;
                 font-size:0.78rem; font-weight:700;}
-.lsi-title {font-size:1.7rem; font-weight:700; margin-bottom:0;}
-.lsi-subtitle {color:#667085; margin-top:0; font-size:0.95rem;}
+.lsi-title {font-size:1.35rem; font-weight:700; margin-bottom:0;}
+.lsi-subtitle {color:#667085; margin-top:0; font-size:0.85rem;}
 .lsi-card {border:1px solid rgba(128,128,128,0.25); border-radius:10px; padding:12px 14px; height:100%;}
 .lsi-card .label {font-size:0.78rem; color:#667085; text-transform:uppercase; letter-spacing:0.04em;}
 .lsi-card .value {font-size:1.7rem; font-weight:700; line-height:1.2;}
@@ -37,6 +37,10 @@ CSS = """
 .lsi-step {padding:4px 10px; border-radius:14px; font-size:0.8rem; border:1px solid rgba(128,128,128,0.35);}
 .lsi-step.done {background:rgba(6,118,71,0.10); border-color:#067647;}
 .lsi-step.miss {opacity:0.45;}
+.lsi-talk {border:1px dashed #C4560C; background:rgba(253,233,215,0.45); padding:8px 14px; border-radius:8px;
+           margin:4px 0 12px 0; font-size:0.9rem;}
+.lsi-talk ul {margin:4px 0 0 0;}
+.lsi-why {color:#475467; font-size:0.85rem;}
 </style>
 """
 

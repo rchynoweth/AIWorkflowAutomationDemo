@@ -90,7 +90,8 @@ Full guide: [docs/DATABRICKS_DEPLOYMENT.md](docs/DATABRICKS_DEPLOYMENT.md).
 `DEMO_MODE=true` (default) uses the fixed seed and processing date (2026-10-12), deterministic scenarios
 (`LSI-SYN-000001`–`000020`), the synthetic adapter with configured failure/mismatch/duplicate/delay modes
 (`config/demo_scenarios.yml`), and a full reset (sidebar **Reset demo** or `POST /api/demo/reset`).
-Walkthrough: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
+Walkthrough: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md). In the app, start on **Demo Story** (guided chapters with
+presenter talk track) and **How It Works** (architecture, agent, automated vs human-in-the-loop).
 
 ## Testing
 

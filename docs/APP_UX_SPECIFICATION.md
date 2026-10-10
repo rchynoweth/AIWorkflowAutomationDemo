@@ -20,11 +20,29 @@
 | AI content | Labeled "Agent" with a sparkle icon and the agent mode (LLM / deterministic) |
 | Deterministic facts | Labeled "Rule" with the rule ID |
 
+## 0. Demo layer (presenter experience)
+
+Design principle: **calm by default, detail on demand.** Pages show the few things a presenter needs; filters,
+extra metrics, evidence, and tool calls live in expanders and popovers.
+
+- **Navigation sections:** Demo (Demo Story, How It Works) · Operations (Home, Priority Queue, Loan 360,
+  Portfolio) · Trust (Agent Activity, Evaluation). The app opens on Demo Story.
+- **Demo Story (`app/pages/story.py`):** ten chapters (set the scene → glance → queue → investigate → agent →
+  decide → verify → failure → trust → close). Each chapter shows its goal, minutes, and talk track, and an
+  **Open** button that navigates to the right page (and loan). The target page then shows a chapter banner
+  with "Say" and "Do" notes and a **Next chapter** button.
+- **Presenter notes:** sidebar toggle (default on) showing a dashed 🎤 talk-track callout on each page.
+  Content lives in `config/demo_story.yml` and can be edited without code changes.
+- **How It Works (`app/pages/how_it_works.py`):** three pillars (monitor, agent investigates, people decide),
+  an architecture diagram color-coded by automated / AI / human / System of Record, a "who does what" table for
+  every step of the loop, the agent loop diagram with what the agent may and may never do, a rules-vs-agent-vs-
+  people decision split, and the Databricks components used.
+
 ## 1. Home (`app/pages/home.py`)
 
-1. **KPI cards** (`components/kpi_cards.py`): Active Loans, Need Attention, Upcoming, Overdue, Missing
-   Follow-Up, Critical, Recommendations Awaiting Approval, Approved Today, Verification Failures — all from
-   `GET /api/portfolio/summary`.
+1. **KPI cards** (`components/kpi_cards.py`): five headline cards (Active loans, Need attention, Critical,
+   Awaiting approval, Failed verification); Upcoming, Due, Overdue, Missing follow-up, Data exceptions, Approved
+   today, and Awaiting verification under "More metrics". All from `GET /api/portfolio/summary`.
 2. **Portfolio Health** (`components/portfolio_health.py`): four segment buttons (Healthy, Watch, Action
    Required, Critical) with counts and a stacked bar. Clicking a segment filters the task preview and offers
    "Open in Portfolio".

@@ -1,123 +1,104 @@
-"""Loan 360: header, Overview, Events, Agent Analysis (+ review, Ask the Agent), Recommendations, Activity."""
+"""Loan 360: why this loan, timeline, agent proposal + human decision, history, activity."""
 from __future__ import annotations
 
 import pandas as pd
 import streamlit as st
 
 from app.components import activity_trace, agent_assessment, event_timeline, review_controls
+from app.components.agent_assessment import nice
 from app.components.styles import badge, esc
+from app.components.talk_track import active_chapter_banner, notes
 from app.state import ApiError, get_client, reviewer
 
-SUGGESTED_QUESTIONS = [
-    "Why is this loan prioritized?", "What should happen next?", "What information is missing?",
-    "Is there already a follow-up?", "What evidence supports this?", "Which rule applies?",
-    "What happens if I reject?", "Are there pending actions?",
-]
+SUGGESTED_QUESTIONS = ["Why is this loan prioritized?", "What should happen next?", "What information is missing?",
+                       "What happens if I reject?"]
 
 
 def _picker(client) -> str | None:
-    loans = client.loans(limit=5000)
-    ids = [r["loan_id"] for r in loans]
-    current = st.session_state.get("selected_loan_id")
-    index = ids.index(current) if current in ids else None
-    choice = st.selectbox("Loan", ids, index=index, placeholder="Select a synthetic loan (e.g. LSI-SYN-000005)",
-                          format_func=lambda lid: lid, key="l360_picker")
-    if choice and choice != current:
+    ids = [r["loan_id"] for r in client.loans(limit=5000)]
+    selected = st.session_state.get("selected_loan_id")
+    if selected in ids and st.session_state.get("l360_picker") != selected:
+        st.session_state["l360_picker"] = selected
+    choice = st.selectbox("Loan", ids, index=None, key="l360_picker", label_visibility="collapsed",
+                          placeholder="Select a synthetic loan, e.g. LSI-SYN-000005")
+    if choice:
         st.session_state["selected_loan_id"] = choice
-        st.rerun()
     return choice
 
 
 def _header(detail: dict) -> None:
     loan, state = detail["loan"], detail["state"]
-    st.markdown(
-        f"<div style='font-size:1.4rem; font-weight:700'>{esc(loan['loan_id'])} · {esc(loan['borrower_display_name'])} "
-        f"{badge(state['priority'])}</div>", unsafe_allow_html=True)
-    cols = st.columns(7)
-    for col, (label, value) in zip(cols, [
-        ("Loan status", loan["loan_status"]), ("Payment status", loan["payment_status"]),
-        ("Days delinquent", loan["days_delinquent"]), ("Foreclosure status", loan["foreclosure_status"]),
-        ("Priority", state["priority"]), ("Score", state["attention_score"]), ("Days overdue", state["days_overdue"]),
-    ]):
-        col.markdown(f'<div class="lsi-card"><div class="label">{esc(label)}</div>'
-                     f'<div style="font-weight:700; font-size:1.05rem">{esc(value)}</div></div>', unsafe_allow_html=True)
+    facts = [nice(state["primary_condition"]), state["current_milestone"] and nice(state["current_milestone"]),
+             f"{state['days_overdue']} days overdue" if state["days_overdue"] else None,
+             f"score {state['attention_score']}", nice(loan["payment_status"])]
+    st.markdown(f"<div style='font-size:1.3rem; font-weight:700'>{esc(loan['loan_id'])} · "
+                f"{esc(loan['borrower_display_name'])} &nbsp; {badge(state['priority'])}</div>"
+                f"<div style='color:#475467'>{esc(' · '.join(f for f in facts if f))}</div>",
+                unsafe_allow_html=True)
 
 
 def _overview(detail: dict) -> None:
-    loan, state, parties = detail["loan"], detail["state"], detail["parties"]
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        st.markdown("**Loan (synthetic)**")
-        st.write({"Portfolio": loan["portfolio_id"], "Boarding date": loan["boarding_date"],
-                  "Original balance": f"${float(loan['original_balance'] or 0):,.2f}",
-                  "Current balance": f"${float(loan['current_balance'] or 0):,.2f}",
-                  "Property": f"{loan['property_city']}, {loan['property_county']}, {loan['property_state']}"})
-    with c2:
-        st.markdown("**Assigned parties**")
-        party = parties.get("party") or {}
-        st.write({"Specialist": f"{parties['specialist']['name']} ({parties['specialist']['team']})",
-                  "Attorney / vendor": f"{party.get('name')} ({party.get('type')})" if party else "None assigned",
-                  "Required party type": parties.get("required_party_type") or "—",
-                  "Required party present": parties.get("party_ok")})
-    with c3:
-        st.markdown("**Servicing state**")
-        st.write({"Current milestone": state["current_milestone"] or "No servicing track",
-                  "Milestone status": state["milestone_status"], "Effective follow-up": state["effective_followup_date"],
-                  "Days to follow-up": state["days_to_followup"], "Health": state["health_segment"],
-                  "Escalation": f"{state['escalation_state']} ({state['required_role']})"})
-    st.markdown("**Open conditions (deterministic rules)**")
-    st.dataframe(pd.DataFrame(state["raw_conditions"]), hide_index=True, use_container_width=True)
-    left, right = st.columns(2)
+    state, loan, parties = detail["state"], detail["loan"], detail["parties"]
+    left, right = st.columns([3, 2], gap="large")
     with left:
-        st.markdown("**Score drivers** (config/attention_scoring.yml)")
+        items = "".join(f"<li>{esc(c['detail'])} <code>{esc(c['rule_id'])}</code></li>"
+                        for c in state["raw_conditions"])
+        st.markdown(f'<div class="lsi-rule"><b>Why this loan needs attention</b> (deterministic rules)'
+                    f'<ul style="margin-bottom:0">{items}</ul></div>', unsafe_allow_html=True)
+        st.write("")
         drivers = pd.DataFrame(state["score_drivers"])
         if not drivers.empty:
-            st.bar_chart(drivers.set_index("detail")["points"], horizontal=True, height=220)
+            st.markdown(f"**Attention score {state['attention_score']}** — how it adds up")
+            st.bar_chart(drivers.set_index("detail")["points"], horizontal=True, height=180)
     with right:
-        st.markdown("**Escalation reasons**")
-        st.dataframe(pd.DataFrame(state["escalation_reasons"]), hide_index=True, use_container_width=True)
-        st.markdown("**Pending actions**")
-        st.write(detail["pending_actions"] or "None")
-        if detail.get("latest_verification"):
-            v = detail["latest_verification"]
-            st.markdown(f"Latest verification: {badge(v['verification_status'])} {esc(v['detail'])}",
-                        unsafe_allow_html=True)
+        party = parties.get("party") or {}
+        st.markdown("**Key facts**")
+        st.markdown(
+            f"- Milestone: **{esc(nice(state['current_milestone']) or 'none')}**"
+            f" ({esc((state['milestone_status'] or '').title())})\n"
+            f"- Next follow-up: **{esc(state['effective_followup_date'] or '—')}**\n"
+            f"- Escalation: **{esc(nice(state['escalation_state']))}** → {esc(nice(state['required_role']))}\n"
+            f"- Balance: **${float(loan['current_balance'] or 0):,.0f}** · {esc(nice(loan['foreclosure_status']))}\n"
+            f"- Specialist: {esc(parties['specialist']['name'])}\n"
+            f"- Attorney / vendor: {esc(party.get('name') or 'none assigned')}")
+        if detail["pending_actions"]:
+            st.info(f"Pending action: {detail['pending_actions'][0]['action_id']} "
+                    f"({nice(detail['pending_actions'][0]['action_type'])}), awaiting verification.")
 
 
 def _ask(client, loan_id: str) -> None:
-    st.markdown("#### ✨ Ask the Agent")
-    st.caption("Governed questions about this loan. Answers use deterministic tools; tool calls are shown.")
-    cols = st.columns(4)
+    st.markdown("#### ✨ Ask the agent")
+    cols = st.columns(len(SUGGESTED_QUESTIONS))
     asked = None
     for i, q in enumerate(SUGGESTED_QUESTIONS):
-        if cols[i % 4].button(q, key=f"q_{i}", use_container_width=True):
+        if cols[i].button(q, key=f"q_{i}", use_container_width=True):
             asked = q
-    with st.form("ask_form", clear_on_submit=True):
-        free = st.text_input("Your question")
-        if st.form_submit_button("Ask") and free.strip():
-            asked = free.strip()
+    free = st.chat_input("Ask a question about this loan")
+    asked = asked or free
     if asked:
         rid, _ = reviewer()
-        with st.spinner("Agent investigating with tools..."):
+        with st.spinner("Agent checking the facts with its tools..."):
             try:
                 st.session_state[f"answer_{loan_id}"] = {"q": asked, **client.agent("ask", loan_id, asked, rid)}
             except ApiError as exc:
                 st.session_state[f"answer_{loan_id}"] = {"q": asked, "answer": f"Agent unavailable: {exc.detail}",
-                                                         "tool_calls": [], "agent_mode": "error"}
+                                                         "tool_calls": []}
     answer = st.session_state.get(f"answer_{loan_id}")
     if answer:
-        st.markdown(f'<div class="lsi-ai"><b>Q:</b> {esc(answer["q"])}<br><b>A</b> ({esc(answer.get("agent_mode"))}): '
-                    f'{esc(answer["answer"])}</div>', unsafe_allow_html=True)
-        with st.expander(f"Tool calls ({len(answer.get('tool_calls') or [])})"):
-            st.dataframe(pd.DataFrame(answer.get("tool_calls") or []), hide_index=True, use_container_width=True)
+        st.markdown(f'<div class="lsi-ai"><b>{esc(answer["q"])}</b><br>{esc(answer["answer"])}</div>',
+                    unsafe_allow_html=True)
+        st.caption(f"Used {len(answer.get('tool_calls') or [])} tool calls · "
+                   + ", ".join(sorted({c['tool_name'] for c in answer.get('tool_calls') or []})))
 
 
 def render() -> None:
+    active_chapter_banner("loan_360")
     client = get_client()
-    st.markdown("### Loan 360")
+    st.markdown("## Loan 360")
+    notes("loan_360")
     loan_id = _picker(client)
     if not loan_id:
-        st.info("Select a loan, or open one from the Priority Queue or Portfolio.")
+        st.info("Pick a loan above, or open one from the Priority Queue.")
         return
     try:
         detail = client.loan(loan_id)
@@ -125,7 +106,7 @@ def render() -> None:
         st.error(f"Could not load {loan_id}: {exc.detail}")
         return
     _header(detail)
-    tabs = st.tabs(["Overview", "Events", "Agent Analysis", "Recommendations", "Activity"])
+    tabs = st.tabs(["Overview", "Timeline", "Agent & decision", "History", "Activity"])
     with tabs[0]:
         _overview(detail)
     with tabs[1]:
@@ -134,21 +115,17 @@ def render() -> None:
     with tabs[2]:
         recs = client.recommendations(loan_id)
         current = next((r for r in recs if r["status"] != "SUPERSEDED"), None)
-        b1, b2 = st.columns([1, 3])
-        if b1.button("Run agent analysis", type="primary", icon=":material/auto_awesome:", key="run_agent"):
+        if st.button("Run agent analysis", type="primary", icon=":material/auto_awesome:", key="run_agent"):
             rid, _ = reviewer()
-            with st.spinner("Agent investigating with approved tools..."):
+            with st.spinner("Agent investigating with approved tools (about 20-30 seconds)..."):
                 try:
                     res = client.agent("assess", loan_id, user_id=rid)
-                    st.session_state["flash"] = (f"Agent ({res['agent_mode']}) recommended "
-                                                 f"{(res.get('recommendation') or {}).get('recommended_action')}"
-                                                 if res.get("recommendation") else
+                    rec = res.get("recommendation")
+                    st.session_state["flash"] = (f"Agent proposes {nice(rec['recommended_action'])}" if rec else
                                                  "Agent analysis failed — routed to specialist review")
                 except ApiError as exc:
                     st.session_state["flash"] = f"Agent analysis failed — routed to specialist review ({exc.detail})"
             st.rerun()
-        b2.caption(f"Review status: {detail['review_status']}. The agent never executes actions; it prepares "
-                   "proposals for your authorization.")
         agent_assessment.render(current, detail["state"])
         review_controls.render(current, detail["state"])
         review_controls.render_actions(detail)
@@ -156,18 +133,15 @@ def render() -> None:
         _ask(client, loan_id)
     with tabs[3]:
         recs = client.recommendations(loan_id)
-        if not recs:
-            st.info("No recommendations yet.")
-        else:
-            df = pd.DataFrame(recs)[["created_at", "recommendation_id", "agent_mode", "recommended_action",
-                                     "recommended_followup_date", "confidence", "attention_score", "priority",
-                                     "status"]]
+        if recs:
+            df = pd.DataFrame(recs)[["created_at", "agent_mode", "recommended_action", "confidence", "status"]]
             st.dataframe(df, hide_index=True, use_container_width=True)
         if detail.get("actions"):
-            st.markdown("**Actions**")
-            st.dataframe(pd.DataFrame(detail["actions"])[["action_id", "action_type", "event_type", "followup_date",
-                                                          "status", "approved_by", "approved_at", "submitted_at",
-                                                          "adapter_mode"]], hide_index=True, use_container_width=True)
+            st.dataframe(pd.DataFrame(detail["actions"])[["action_id", "action_type", "followup_date", "status",
+                                                          "approved_by", "adapter_mode"]],
+                         hide_index=True, use_container_width=True)
+        if not recs and not detail.get("actions"):
+            st.info("No recommendations or actions yet.")
     with tabs[4]:
         records = client.loan_activity(loan_id)
         activity_trace.render_flow(records)
