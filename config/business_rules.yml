@@ -1,0 +1,153 @@
+# Deterministic servicing-condition rules.
+# SYNTHETIC ASSUMPTIONS: thresholds and definitions are illustrative and configurable. They do not
+# represent any lender's servicing policy, legal process, or regulated decision framework.
+version: rules-2026.10.1
+synthetic_assumption: true
+
+thresholds:
+  default_lookahead_days: 7            # used when a milestone rule is missing
+  verification_window_days: 2          # days an adapter-created event may take to appear in a refresh
+  failure_lookback_days: 30            # failed/unverified actions older than this are not re-raised
+  prior_rejection_lookback_days: 14    # reviewer rejections inside this window constrain allowed actions
+  deferral_lookback_days: 14           # deferred recommendations inside this window raise PENDING_REVIEW
+  max_followup_horizon_days: 120       # proposed follow-up dates must fall inside this horizon
+  business_days_only: true             # calculated follow-up dates roll forward off weekends
+  max_note_length: 1000
+
+# Event types that carry a follow-up commitment for the current milestone ("clock-resetting" events).
+followup_event_types: [FOLLOWUP, CONTACT, ESCALATION, INFO_REQUEST, DATA_REVIEW]
+
+# Loan statuses considered part of the active monitored portfolio.
+active_loan_statuses: [ACTIVE]
+
+# Conditions that represent work a specialist would normally act on.
+actionable_conditions: [OVERDUE, DUE, MISSING_FOLLOWUP, COMPLETED_NEEDS_NEXT]
+
+# Primary condition precedence (highest first). A loan may raise several raw conditions;
+# the first match in this list becomes the primary condition.
+condition_precedence:
+  - VERIFICATION_FAILURE
+  - DATA_EXCEPTION
+  - ALREADY_ACTIONED
+  - DUPLICATE_RISK
+  - OVERDUE
+  - MISSING_FOLLOWUP
+  - DUE
+  - COMPLETED_NEEDS_NEXT
+  - PENDING_REVIEW
+  - PENDING_ACTION
+  - UPCOMING
+  - COMPLETED
+  - NO_ACTION
+
+conditions:
+  NO_ACTION: No servicing attention required on the processing date.
+  UPCOMING: Incomplete milestone with a follow-up date inside the milestone look-ahead window.
+  DUE: Incomplete milestone with a follow-up date equal to the processing date.
+  OVERDUE: Incomplete milestone with a follow-up date before the processing date.
+  COMPLETED: Current milestone complete and no further milestone is configured.
+  COMPLETED_NEEDS_NEXT: Current milestone complete but the configured next milestone has not been opened.
+  MISSING_FOLLOWUP: Incomplete milestone whose rule requires a follow-up, but no follow-up date exists.
+  DUPLICATE_RISK: Two or more equivalent open follow-up events exist for the current milestone.
+  DATA_EXCEPTION: Required facts or rules are missing or conflicting.
+  PENDING_REVIEW: A recommendation for the loan was deferred and still awaits specialist review.
+  PENDING_ACTION: An approved action has been submitted and is awaiting verification.
+  VERIFICATION_FAILURE: An approved action failed, or the refreshed source does not match it.
+  ALREADY_ACTIONED: An actionable condition exists but is already covered by a pending approved action.
+
+rules:
+  - id: RULE-NOACTION-001
+    name: No attention required
+    condition: NO_ACTION
+    description: No raw condition is raised for the loan on the processing date (on track, or no servicing track).
+  - id: RULE-MILESTONE-001
+    name: Current milestone determination
+    description: The current milestone is the non-cancelled MILESTONE event with the highest configured milestone sequence; ties resolve to the latest event date, then latest created_at.
+  - id: RULE-MILESTONE-002
+    name: Milestone completion
+    description: A milestone is complete when status is COMPLETED and completed_date is populated.
+  - id: RULE-MILESTONE-003
+    name: Completed milestone needs next
+    condition: COMPLETED_NEEDS_NEXT
+    description: Current milestone complete, rule defines next_milestone_type, and no event exists for the next milestone.
+  - id: RULE-MILESTONE-004
+    name: Terminal milestone complete
+    condition: COMPLETED
+    description: Current milestone complete and the rule defines no next milestone.
+  - id: RULE-FOLLOWUP-001
+    name: Effective follow-up date
+    description: The effective follow-up date is the latest open follow-up-type event for the current milestone; otherwise the milestone event's own follow-up date.
+  - id: RULE-FOLLOWUP-002
+    name: Missing follow-up
+    condition: MISSING_FOLLOWUP
+    description: Incomplete milestone, rule requires_followup is true, and no effective follow-up date exists.
+  - id: RULE-FOLLOWUP-003
+    name: Overdue follow-up
+    condition: OVERDUE
+    description: Incomplete milestone with effective follow-up date earlier than the processing date.
+  - id: RULE-FOLLOWUP-004
+    name: Due follow-up
+    condition: DUE
+    description: Incomplete milestone with effective follow-up date equal to the processing date.
+  - id: RULE-FOLLOWUP-005
+    name: Upcoming follow-up
+    condition: UPCOMING
+    description: Incomplete milestone with effective follow-up date 1..lookahead_days after the processing date.
+  - id: RULE-FOLLOWUP-006
+    name: Follow-up date calculation
+    description: Proposed follow-up date = processing date + action followup_days (or the milestone default), rolled forward to the next business day when business_days_only is true.
+  - id: RULE-DUPLICATE-001
+    name: Existing duplicate open events
+    condition: DUPLICATE_RISK
+    description: Two or more open follow-up-type events of the same event type exist for the current milestone.
+  - id: RULE-DUPLICATE-002
+    name: Proposed event duplicates open event
+    description: A proposed event is a duplicate when an open, not-overdue event of the same event type and milestone already exists, or a pending action of the same action type exists.
+  - id: RULE-PENDING-001
+    name: Pending approved action
+    condition: PENDING_ACTION
+    description: The loan's latest action inside the failure lookback is APPROVED or SUBMITTED and its verification status is PENDING.
+  - id: RULE-PENDING-002
+    name: Already actioned
+    condition: ALREADY_ACTIONED
+    description: An actionable condition is present and a pending approved action exists for the loan.
+  - id: RULE-PENDING-003
+    name: Deferred recommendation
+    condition: PENDING_REVIEW
+    description: The latest reviewer decision for the loan inside the deferral lookback is DEFER.
+  - id: RULE-REVIEW-001
+    name: Prior rejection
+    description: Actions rejected for the loan inside the prior-rejection lookback are removed from allowed actions unless escalation is ESCALATE or CRITICAL.
+  - id: RULE-DATA-001
+    name: Missing milestone rule
+    condition: DATA_EXCEPTION
+    description: The current milestone type has no active milestone rule.
+  - id: RULE-DATA-002
+    name: Conflicting milestone dates
+    condition: DATA_EXCEPTION
+    description: completed_date earlier than event_date, COMPLETED status without completed_date, or OPEN status with completed_date.
+  - id: RULE-DATA-003
+    name: Missing assigned party
+    condition: DATA_EXCEPTION
+    description: The current milestone's overdue action requires an attorney or servicing vendor and no active party of that type is assigned.
+  - id: RULE-DATA-004
+    name: Missing assigned specialist
+    condition: DATA_EXCEPTION
+    description: An in-process loan has no active assigned servicing specialist.
+  - id: RULE-DATA-005
+    name: Invalid source values
+    condition: DATA_EXCEPTION
+    description: Silver validation flagged an unparseable or out-of-domain value on the loan or its current milestone event.
+  - id: RULE-VERIFICATION-001
+    name: Verification failure
+    condition: VERIFICATION_FAILURE
+    description: The loan's latest action inside the failure lookback has verification status FAILED, NOT_FOUND, MISMATCH, or DUPLICATE.
+  - id: RULE-VERIFICATION-002
+    name: Action verification matching
+    description: Adapter-created events match an action on loan_id, event_type, source SERVICING_SYSTEM_ADAPTER, and created_at at or after submitted_at.
+  - id: RULE-VERIFICATION-003
+    name: Verification status
+    description: 0 matches -> PENDING inside the verification window, else NOT_FOUND; 1 match -> VERIFIED or MISMATCH by field comparison; 2+ matches -> DUPLICATE; adapter failure -> FAILED.
+  - id: RULE-VALIDATION-001
+    name: Proposed event validation
+    description: Proposed events must use an allowed action, an active loan, a matching event type, a follow-up date inside the horizon, required parties, a bounded note, no duplicate, no conflicting pending action, and a current (non-stale) recommendation.

@@ -218,3 +218,14 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Loan Servicing Intelligence (synthetic demo) ---
+# Runtime artifacts are regenerated; generated source files in data/generated are committed.
+data/landing/*
+data/outbound/*
+data/processed/*
+!data/landing/.gitkeep
+!data/outbound/.gitkeep
+!data/processed/.gitkeep
+.databricks/
+.streamlit/secrets.toml

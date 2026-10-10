@@ -1,0 +1,9 @@
+# Runtime dependencies for the Databricks App (installed automatically by Databricks Apps).
+pandas>=2.0
+pyyaml>=6.0
+pydantic>=2.5
+fastapi>=0.110
+uvicorn>=0.27
+httpx>=0.27
+streamlit>=1.40
+databricks-sdk>=0.40

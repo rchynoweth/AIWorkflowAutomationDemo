@@ -1,0 +1,42 @@
+# Deterministic, explainable attention scoring.
+# SYNTHETIC ASSUMPTIONS: weights and thresholds are illustrative and configurable.
+# The LLM may explain the score but never calculates it.
+version: scoring-2026.10.1
+synthetic_assumption: true
+max_score: 100
+
+# Points for the primary condition.
+condition_points:
+  VERIFICATION_FAILURE: 40
+  OVERDUE: 30
+  DATA_EXCEPTION: 25
+  MISSING_FOLLOWUP: 25
+  DUPLICATE_RISK: 20
+  DUE: 20
+  COMPLETED_NEEDS_NEXT: 20
+  PENDING_REVIEW: 10
+  UPCOMING: 8
+  PENDING_ACTION: 5
+  ALREADY_ACTIONED: 5
+  COMPLETED: 0
+  NO_ACTION: 0
+
+factors:
+  days_overdue:          { points_per_unit: 1, max_points: 30 }
+  milestone_severity:    { points_per_unit: 3, max_points: 15 }
+  secondary_conditions:  { points_per_unit: 5, max_points: 15 }
+  failed_actions:        { points_per_unit: 10, max_points: 20 }
+  missing_assigned_party: { points: 10 }
+  prior_rejection:       { points: 5 }
+  critical_date_proximity: { points: 15, min_severity: 5, max_days_to_followup: 5 }
+  covered_by_pending_action: { points: -30 }
+
+# Severity applied only to loans with an open servicing track (not NO_ACTION/COMPLETED).
+severity_applies_to_conditions_except: [NO_ACTION, COMPLETED]
+default_missing_rule_severity: 3
+
+priority_thresholds:     # minimum score for each priority (evaluated highest first)
+  CRITICAL: 70
+  HIGH: 45
+  MEDIUM: 20
+  LOW: 0

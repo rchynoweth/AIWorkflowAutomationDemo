@@ -1,0 +1,27 @@
+# Databricks App definition: Loan Servicing Intelligence (synthetic demonstration).
+# Streamlit serves the UI on the app port; the agent REST API runs in-process on 127.0.0.1:8001.
+command:
+  - streamlit
+  - run
+  - app/main.py
+  - --server.port
+  - "8000"
+  - --server.address
+  - "0.0.0.0"
+env:
+  - name: DEMO_MODE
+    value: "true"
+  - name: LSI_REPOSITORY_BACKEND
+    value: "databricks"
+  - name: LSI_CATALOG
+    value: "main"
+  - name: LSI_SCHEMA
+    value: "loan_servicing_intelligence"
+  - name: LSI_AGENT_MODE
+    value: "auto"
+  - name: DATABRICKS_WAREHOUSE_ID
+    valueFrom: sql-warehouse
+  - name: LSI_MODEL_ENDPOINT
+    valueFrom: serving-endpoint
+  - name: LSI_API_PORT
+    value: "8001"
