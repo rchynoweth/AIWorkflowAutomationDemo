@@ -4,7 +4,7 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from app.components import activity_trace, agent_assessment, event_timeline, review_controls
+from app.components import activity_trace, agent_assessment, event_timeline, proposed_event, review_controls
 from app.components.agent_assessment import nice
 from app.components.styles import badge, esc
 from app.components.talk_track import active_chapter_banner, notes
@@ -110,6 +110,8 @@ def render() -> None:
     with tabs[0]:
         _overview(detail)
     with tabs[1]:
+        recs_tl = client.recommendations(loan_id)
+        proposed_event.render(next((r for r in recs_tl if r["status"] != "SUPERSEDED"), None))
         include = st.toggle("Include payment history", value=False, key="tl_payments")
         event_timeline.render(client.events(loan_id, include))
     with tabs[2]:

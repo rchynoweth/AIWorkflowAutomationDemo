@@ -101,7 +101,7 @@ story:
         - "On approval we re-check everything: still current, no duplicate, no pending action, still allowed."
       databricks:
         - "Decisions are written to Delta with who, when, and what changed - a complete audit trail in Unity Catalog."
-      click: "Edit tab, change follow-up date, Approve with edits."
+      click: "Timeline tab: in the Proposed event panel adjust the date or note, then Confirm and schedule (or use the Agent & decision tab)."
     - id: verify
       title: "Execute and verify"
       page: loan_360

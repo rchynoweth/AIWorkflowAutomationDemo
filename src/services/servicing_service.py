@@ -270,7 +270,8 @@ class LoanServicingService:
                                  "milestone_type": a.get("milestone_type") or state["current_milestone"],
                                  "event_date": _iso(a.get("event_date")), "followup_date": _iso(a.get("followup_date")),
                                  "completed_date": None, "status": a.get("status"),
-                                 "display_state": "SUBMITTED" if v == "PENDING" else "FAILED",
+                                 "display_state": ("APPROVED" if a.get("status") == "APPROVED" else "SUBMITTED")
+                                 if v == "PENDING" else "FAILED",
                                  "source": "APPROVED_ACTION", "event_note": a.get("note") or a.get("failure_reason") or ""})
             rows.sort(key=lambda r: (r["event_date"] or "", r["event_id"]))
             return rows

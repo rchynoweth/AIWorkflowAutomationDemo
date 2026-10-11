@@ -75,6 +75,11 @@ priority badge, score, days overdue. Loan picker (search) if none selected.
 - **Overview:** metadata, property (synthetic), balances, assigned specialist and party, statuses, current
   milestone, effective follow-up, health, score drivers (bar), open conditions with rule IDs, escalation
   reasons, pending actions.
+- **Timeline - proposed event panel** (`components/proposed_event.py`): when the current recommendation proposes
+  an event (for example opening the next milestone), the specialist can adjust the follow-up date, servicing
+  note, and outreach, then **Confirm and schedule** (records APPROVE, or EDIT when anything changed; revalidates;
+  optionally sends to the servicing system immediately) or **Dismiss** (records REJECT with a reason). Timeline
+  states move Proposed -> Approved (not yet sent) -> Scheduled (awaiting verification) -> Verified.
 - **Events:** chronological timeline (`components/event_timeline.py`) with state styling for completed,
   current, upcoming, due, overdue, proposed, submitted, failed, verified; toggle to include payment history.
 - **Agent Analysis:** (`components/agent_assessment.py`) detected primary + secondary conditions, priority,
