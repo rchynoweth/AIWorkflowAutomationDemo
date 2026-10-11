@@ -6,7 +6,8 @@ from fastapi.encoders import jsonable_encoder
 
 from src.agents.llm_client import LlmError
 from src.api.container import get_service, startup_warning
-from src.models.schemas import AgentRequest, DecisionRequest, EvaluationRequest
+from src.models.schemas import AgentRequest, BatchAgentRequest, DecisionRequest, EvaluationRequest
+from src.services import backend_status
 from src.services.servicing_service import InvalidState, LoanServicingService, NotFound, ValidationFailed
 
 app = FastAPI(title="Loan Servicing Intelligence API",
@@ -42,6 +43,34 @@ def versions(service: LoanServicingService = Depends(svc)):
     return service.settings.versions()
 
 
+@app.post("/api/reload")
+def reload(service: LoanServicingService = Depends(svc)):
+    return _handle(service.reload)
+
+
+@app.get("/api/backend/status")
+def backend(service: LoanServicingService = Depends(svc)):
+    status = backend_status.workflow_status()
+    latest = backend_status.latest_success_end(status)
+    status["newer_than_app"] = bool(latest and service.loaded_at and latest > service.loaded_at)
+    status["app_loaded_at"] = service.loaded_at
+    status["ai_insights"] = backend_status.ai_insights(service.repository)
+    return jsonable_encoder(status)
+
+
+@app.get("/api/backend/resources")
+def resources(service: LoanServicingService = Depends(svc)):
+    return jsonable_encoder(backend_status.resource_inventory(service.settings))
+
+
+@app.post("/api/backend/run-monitor")
+def run_monitor():
+    try:
+        return backend_status.run_monitor_now()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=f"Could not start workflow: {str(exc)[:200]}") from exc
+
+
 @app.post("/api/demo/reset")
 def reset(service: LoanServicingService = Depends(svc)):
     return _handle(service.reset_demo)
@@ -59,6 +88,11 @@ def agent(request: AgentRequest, service: LoanServicingService = Depends(svc)):
             raise HTTPException(status_code=422, detail="question is required for ask")
         return _handle(service.ask, request.question, request.loan_id, request.user_id, request.agent_mode)
     return _handle(service.briefing, request.agent_mode)
+
+
+@app.post("/api/agent/batch")
+def agent_batch(request: BatchAgentRequest, service: LoanServicingService = Depends(svc)):
+    return _handle(service.triage, request.loan_ids, request.limit, request.agent_mode)
 
 
 @app.get("/api/agent/activity")

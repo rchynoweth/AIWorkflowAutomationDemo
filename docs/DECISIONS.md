@@ -85,6 +85,20 @@ Format: identifier, status, date documented, context, options, decision, rationa
 - **Decision:** Reject any LLM briefing containing a number not present in the deterministic facts; fall back to the templated briefing.
 - **Consequences:** Occasional fallback; zero invented numbers.
 
+## ADR-014 — Recurring serverless "servicing monitor" workflow as the backend
+- **Status:** Accepted · **Documented:** 2026-10-11
+- **Context:** The demo needs automation that runs in Databricks without the app: continuous re-evaluation, verification, and agent work behind the scenes.
+- **Options:** (a) app-only processing; (b) Lakeflow Declarative Pipelines; (c) a Databricks Workflow of notebook tasks reusing `src/`.
+- **Decision:** (c) `lsi-servicing-monitor`: ingest -> silver -> refresh & verify -> rules & scores (gold) -> agent triage + AI Functions (parallel). Serverless, scheduled every 30 minutes (created paused; unpause for demo days). The setup pipeline `lsi-pipeline` remains for (re)generating data.
+- **Rationale:** Same code as the app (one implementation); visible DAG and run history in the Databricks UI; scales to zero between runs.
+- **Consequences:** The app reads workflow results on sync (`POST /api/reload`); the sidebar shows run status, Run now, and Sync. Agent triage skips demo spotlight loans so the live demo moment is preserved.
+
+## ADR-015 — AI Functions for SQL-native summaries
+- **Status:** Accepted · **Documented:** 2026-10-11
+- **Decision:** `ai_query('<endpoint>', prompt)` in the workflow writes `gold_ai_loan_insights` and `gold_ai_portfolio_briefing` from deterministic Gold facts.
+- **Rationale:** Shows Databricks AI Functions directly over governed tables, complementary to the tool-calling agent.
+- **Consequences:** Outputs are informational only (labeled AI-generated); no decision depends on them.
+
 ## ADR-013 — Customer-neutrality scanner with external denylist
 - **Status:** Accepted · **Documented:** 2026-10-10
 - **Context:** The repository must be provably customer-neutral without embedding the terms it guards against.

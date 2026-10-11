@@ -2,7 +2,7 @@
 
 **Agent-powered portfolio monitoring and loan-servicing workflow automation**
 
-> ⚠️ **Synthetic demonstration data.** Every borrower, loan, property, specialist, vendor, event, rule,
+> **Synthetic demonstration data.** Every borrower, loan, property, specialist, vendor, event, rule,
 > threshold, score, workflow, and metric in this repository is synthetic. Nothing here represents any
 > lender's production schema, servicing policy, legal process, or regulated decision framework.
 
@@ -38,6 +38,9 @@ Synthetic exports -> UC volume -> Bronze -> Silver -> Gold (rules, escalation, s
   -> human review -> revalidation -> SyntheticServicingSystemAdapter -> simulated System of Record
   -> next refresh -> verification -> verified, or back to the queue
 ```
+
+An always-on backend workflow (`lsi-servicing-monitor`) re-evaluates the portfolio, verifies actions, runs agent
+triage, and generates AI Functions summaries on a schedule, without anyone opening the app.
 
 Serverless-first on Azure Databricks: serverless Jobs for the pipeline, a serverless SQL warehouse with
 auto-stop, pay-per-token Foundation Model API (`databricks-claude-sonnet-5-5`), and a Databricks App that is

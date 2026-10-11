@@ -98,5 +98,12 @@ class AgentRequest(BaseModel):
     agent_mode: Literal["auto", "llm", "deterministic"] | None = None
 
 
+class BatchAgentRequest(BaseModel):
+    loan_ids: list[str] | None = None
+    limit: int = 3
+    user_id: str = "SPEC-01"
+    agent_mode: Literal["auto", "llm", "deterministic"] | None = None
+
+
 class EvaluationRequest(BaseModel):
     agent_mode: Literal["auto", "llm", "deterministic"] = "deterministic"

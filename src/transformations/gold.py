@@ -131,6 +131,7 @@ def priority_queue_rows(evaluation: PortfolioEvaluation, recommendations: list[d
             "top_drivers_text": r["top_drivers_text"],
             "recommended_action": rec.get("recommended_action") or r["default_action"],
             "recommendation_id": rec.get("recommendation_id"),
+            "recommendation_source": rec.get("agent_mode"),
             "confidence": rec.get("confidence"),
             "specialist_name": r["specialist_name"],
             "review_status": (review_status or {}).get(r["loan_id"], "NOT_ANALYZED"),

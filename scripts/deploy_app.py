@@ -15,7 +15,7 @@ import argparse
 import time
 
 from databricks.sdk import WorkspaceClient
-from databricks.sdk.service import apps
+from databricks.sdk.service import apps, workspace
 from databricks.sdk.service.sql import StatementState
 
 APP_NAME = "loan-servicing-intelligence"
@@ -51,6 +51,16 @@ def main() -> None:
                              name=args.endpoint,
                              permission=apps.AppResourceServingEndpointServingEndpointPermission.CAN_QUERY)),
     ]
+    for resource_name, job_name, permission in (
+            ("monitor-job", "lsi-servicing-monitor", apps.AppResourceJobJobPermission.CAN_MANAGE_RUN),
+            ("pipeline-job", "lsi-pipeline", apps.AppResourceJobJobPermission.CAN_VIEW)):
+        found = list(w.jobs.list(name=job_name))
+        if found:
+            resources.append(apps.AppResource(name=resource_name, description=f"Databricks Workflow {job_name}",
+                                              job=apps.AppResourceJob(id=str(found[0].job_id),
+                                                                      permission=permission)))
+        else:
+            print(f"WARNING: job {job_name} not found; run scripts/create_pipeline_job.py first")
     description = ("Loan Servicing Intelligence - agent-powered portfolio monitoring and loan-servicing workflow "
                    "automation (synthetic demonstration data).")
     try:
@@ -74,6 +84,14 @@ def main() -> None:
     run_sql(w, args.warehouse_id, f"GRANT USE CATALOG ON CATALOG `{args.catalog}` TO `{sp}`")
     run_sql(w, args.warehouse_id,
             f"GRANT USE SCHEMA, SELECT, MODIFY, CREATE TABLE ON SCHEMA `{args.catalog}`.`{args.schema}` TO `{sp}`")
+
+    try:  # lets the app link to its Git folder in the resource inventory
+        repo = w.workspace.get_status(args.repo_path)
+        w.repos.update_permissions(str(repo.object_id), access_control_list=[
+            workspace.RepoAccessControlRequest(service_principal_name=sp,
+                                               permission_level=workspace.RepoPermissionLevel.CAN_READ)])
+    except Exception as exc:  # noqa: BLE001 - optional
+        print(f"Skipping Git folder permission: {str(exc)[:120]}")
 
     state = w.apps.get(APP_NAME).compute_status.state.value
     if state not in ("ACTIVE", "STARTING"):

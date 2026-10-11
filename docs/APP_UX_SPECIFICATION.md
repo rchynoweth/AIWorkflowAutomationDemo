@@ -17,7 +17,7 @@
 | Priority | CRITICAL red, HIGH orange, MEDIUM amber, LOW slate |
 | Health | Healthy green, Watch blue, Action Required amber, Critical red |
 | Timeline states | COMPLETED grey-green, CURRENT blue, UPCOMING teal, SCHEDULED slate (open follow-up beyond look-ahead), DUE amber, OVERDUE red, PROPOSED purple (dashed), SUBMITTED indigo, FAILED dark red, VERIFIED green check |
-| AI content | Labeled "Agent" with a sparkle icon and the agent mode (LLM / deterministic) |
+| AI content | Labeled "Agent" and the agent mode (LLM / deterministic) |
 | Deterministic facts | Labeled "Rule" with the rule ID |
 
 ## 0. Demo layer (presenter experience)
@@ -31,7 +31,7 @@ extra metrics, evidence, and tool calls live in expanders and popovers.
   decide → verify → failure → trust → close). Each chapter shows its goal, minutes, and talk track, and an
   **Open** button that navigates to the right page (and loan). The target page then shows a chapter banner
   with "Say" and "Do" notes and a **Next chapter** button.
-- **Presenter notes:** sidebar toggle (default on) showing a dashed 🎤 talk-track callout on each page.
+- **Presenter notes:** sidebar toggle (default on) showing a dashed talk-track callout on each page.
   Content lives in `config/demo_story.yml` and can be edited without code changes.
 - **How It Works (`app/pages/how_it_works.py`):** three pillars (monitor, agent investigates, people decide),
   an architecture diagram color-coded by automated / AI / human / System of Record, a "who does what" table for

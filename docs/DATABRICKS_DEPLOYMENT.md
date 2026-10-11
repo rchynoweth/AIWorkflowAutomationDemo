@@ -60,6 +60,13 @@ databricks jobs run-now <job-id>
 Alternatively deploy with Databricks Asset Bundles (`databricks.yml`, also serverless):
 `databricks bundle deploy -t dev && databricks bundle run lsi_pipeline -t dev`.
 
+## 4a. Servicing monitor (recurring backend)
+
+`python scripts/create_pipeline_job.py --repo-path ... --job monitor [--schedule-unpaused] [--run]` creates
+`lsi-servicing-monitor` (tasks 02 -> 03 -> 09 -> 04 -> 08 + 10). The schedule (every 30 minutes, UTC) is created
+**paused** for cost control; unpause it in the Jobs UI on demo days. Agent triage processes up to 8 loans per
+run (widget `triage_limit`) and only loans without a current AI proposal, so steady-state runs make few LLM calls.
+
 ## 5. App
 
 `app.yaml` runs `streamlit run app/main.py`; Streamlit starts the in-process FastAPI on `127.0.0.1:8001`.

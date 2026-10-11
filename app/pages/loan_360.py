@@ -67,7 +67,7 @@ def _overview(detail: dict) -> None:
 
 
 def _ask(client, loan_id: str) -> None:
-    st.markdown("#### ✨ Ask the agent")
+    st.markdown("#### Ask the agent")
     cols = st.columns(len(SUGGESTED_QUESTIONS))
     asked = None
     for i, q in enumerate(SUGGESTED_QUESTIONS):

@@ -174,3 +174,62 @@ def reset_demo(spark, settings) -> None:
     from src.repositories.spark_repo import SparkRepository
 
     SparkRepository(spark, settings).reset_ops()
+
+
+# ---- servicing monitor (recurring backend workflow) ------------------------------------------
+def _service(spark, settings, agent_mode: str = "deterministic"):
+    from src.repositories.spark_repo import SparkRepository
+    from src.services.servicing_service import LoanServicingService
+
+    return LoanServicingService(settings, SparkRepository(spark, settings), agent_mode=agent_mode).load()
+
+
+def refresh_and_verify(spark, settings) -> dict:
+    """Advance the refresh cycle: apply System-of-Record updates and verify submitted actions."""
+    result = _service(spark, settings).refresh()
+    return {k: v for k, v in result.items() if k != "results"}
+
+
+def agent_triage(spark, settings, limit: int = 10, agent_mode: str = "auto", max_workers: int = 4) -> dict:
+    """Agent investigates the highest-priority loans without a current LLM proposal; proposals await review."""
+    service = _service(spark, settings, agent_mode=agent_mode)
+    return service.triage(limit=limit, agent_mode=agent_mode, max_workers=max_workers, actor="workflow")
+
+
+AI_LOAN_PROMPT = (
+    "You summarize SYNTHETIC loan-servicing data for a servicing specialist. In one sentence of at most 30 words, "
+    "state why this loan needs attention and what to look at first. Use only these facts and do not give legal "
+    "or financial advice. Facts: "
+)
+AI_BRIEFING_PROMPT = (
+    "Write a 3-sentence morning briefing for servicing managers from these SYNTHETIC portfolio facts. Use only "
+    "numbers present in the facts. Facts (JSON): "
+)
+
+
+def ai_insights(spark, settings, endpoint: str | None = None, limit: int = 25) -> dict:
+    """Databricks AI Functions (ai_query) over Gold tables: per-loan summaries and a portfolio briefing."""
+    endpoint = endpoint or settings.agent["model_endpoint"]
+    t = lambda name: fq(settings, name)  # noqa: E731
+    spark.sql(f"""
+        CREATE OR REPLACE TABLE {t('gold_ai_loan_insights')}
+        COMMENT 'AI Functions (ai_query) loan summaries - SYNTHETIC DEMONSTRATION DATA' AS
+        SELECT loan_id, priority, primary_condition, CAST(attention_score AS INT) AS attention_score,
+               ai_query('{endpoint}', CONCAT('{AI_LOAN_PROMPT}', why_prioritized, ' | Score drivers: ',
+                        top_drivers_text, ' | Milestone: ', COALESCE(current_milestone, 'none'))) AS ai_summary,
+               '{endpoint}' AS model_endpoint, current_timestamp() AS generated_at
+        FROM {t('gold_priority_queue')}
+        WHERE priority IN ('CRITICAL', 'HIGH')
+        ORDER BY CAST(queue_rank AS INT)
+        LIMIT {int(limit)}
+    """)
+    spark.sql(f"""
+        CREATE OR REPLACE TABLE {t('gold_ai_portfolio_briefing')}
+        COMMENT 'AI Functions (ai_query) portfolio briefing - SYNTHETIC DEMONSTRATION DATA' AS
+        SELECT ai_query('{endpoint}', CONCAT('{AI_BRIEFING_PROMPT}', facts_json)) AS briefing,
+               '{endpoint}' AS model_endpoint, current_timestamp() AS generated_at
+        FROM (SELECT to_json(collect_list(named_struct('group', fact_group, 'name', fact_name,
+                                                       'value', fact_value))) AS facts_json
+              FROM {t('gold_portfolio_briefing_facts')})
+    """)
+    return {"loan_insights": spark.table(t("gold_ai_loan_insights")).count(), "endpoint": endpoint}

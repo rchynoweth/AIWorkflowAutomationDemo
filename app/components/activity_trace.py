@@ -24,7 +24,7 @@ def render_flow(records: list[dict]) -> None:
     parts = []
     for _, label, keys in FLOW:
         done = any(k in seen for k in keys)
-        parts.append(f'<span class="lsi-step {"done" if done else "miss"}">{"✓ " if done else ""}{label}</span>')
+        parts.append(f'<span class="lsi-step {"done" if done else "miss"}">{label}</span>')
     st.markdown('<div class="lsi-flow">' + " → ".join(parts) + "</div>", unsafe_allow_html=True)
 
 

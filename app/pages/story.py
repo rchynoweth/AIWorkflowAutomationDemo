@@ -23,7 +23,7 @@ def render() -> None:
         with st.container(border=True):
             left, right = st.columns([5, 1])
             loan = f" · `{chapter['loan_id']}`" if chapter.get("loan_id") else ""
-            check = "✅ " if chapter["id"] in done else ""
+            check = "(done) " if chapter["id"] in done else ""
             left.markdown(f"**{check}{i}. {esc(chapter['title'])}** &nbsp; "
                           f"<span style='color:#667085'>{PAGE_LABELS[chapter['page']]}{loan} · "
                           f"{chapter.get('minutes', 1)} min</span><br>{esc(chapter['goal'])}",

@@ -24,16 +24,22 @@ def notes(page_key: str) -> None:
     """Small talk-track callout for a page."""
     if not presenter_on():
         return
-    lines = story().get("page_notes", {}).get(page_key, [])
-    if lines:
+    page = story().get("page_notes", {}).get(page_key, {})
+    lines, platform = page.get("story", []), page.get("databricks", [])
+    if lines or platform:
         items = "".join(f"<li>{esc(line)}</li>" for line in lines)
-        st.markdown(f'<div class="lsi-talk">🎤 <b>Talk track</b><ul>{items}</ul></div>', unsafe_allow_html=True)
+        plat = "".join(f"<li>{esc(line)}</li>" for line in platform)
+        st.markdown(f'<div class="lsi-talk"><b>Talk track</b><ul>{items}</ul>'
+                    + (f'<b>On Databricks</b><ul>{plat}</ul>' if plat else "") + "</div>", unsafe_allow_html=True)
 
 
 def chapter_note(chapter: dict) -> None:
-    say = "".join(f"<li>{esc(s)}</li>" for s in chapter.get("say", []))
-    st.markdown(f'<div class="lsi-talk">🎤 <b>Say</b><ul>{say}</ul>'
-                f'<div style="margin-top:4px">👉 <b>Do:</b> {esc(chapter.get("click", ""))}</div></div>',
+    story_lines = "".join(f"<li>{esc(s)}</li>" for s in chapter.get("say", []))
+    platform = "".join(f"<li>{esc(s)}</li>" for s in chapter.get("databricks", []))
+    platform_block = (f'<div style="margin-top:6px"><b>On Databricks</b><ul>{platform}</ul></div>'
+                      if platform else "")
+    st.markdown(f'<div class="lsi-talk"><b>The story</b><ul>{story_lines}</ul>{platform_block}'
+                f'<div style="margin-top:4px"><b>Do:</b> {esc(chapter.get("click", ""))}</div></div>',
                 unsafe_allow_html=True)
 
 

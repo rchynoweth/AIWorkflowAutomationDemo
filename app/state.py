@@ -100,6 +100,21 @@ class ApiClient:
     def run_evaluation(self, agent_mode: str):
         return self.post("/api/evaluation/run", {"agent_mode": agent_mode})
 
+    def batch(self, loan_ids: list[str] | None = None, limit: int = 3, user_id: str = "SPEC-01"):
+        return self.post("/api/agent/batch", {"loan_ids": loan_ids, "limit": limit, "user_id": user_id})
+
+    def reload(self):
+        return self.post("/api/reload")
+
+    def backend(self):
+        return self.get("/api/backend/status")
+
+    def resources(self):
+        return self.get("/api/backend/resources")
+
+    def run_monitor(self):
+        return self.post("/api/backend/run-monitor")
+
     def verification(self):
         return self.get("/api/actions/verification")
 

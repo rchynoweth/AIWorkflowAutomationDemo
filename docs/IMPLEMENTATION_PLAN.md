@@ -1,17 +1,17 @@
 # Implementation Plan — Loan Servicing Intelligence
 
-Status legend: ✅ done · 🔄 in progress · ⏳ planned. Each stage keeps the repository runnable and tested.
+Status legend: Done, In progress, Planned. Each stage keeps the repository runnable and tested.
 
 | Stage | Scope | Deliverables | Tests | Status |
 |-------|-------|--------------|-------|--------|
-| 1 | Document and design | `README.md`, 16 docs, ADRs, config | — | ✅ |
-| 2 | Synthetic data + manifest | `src/data_generation`, `data/generated/*.csv` | `tests/unit/test_data_generation.py` | ✅ |
-| 3 | Medallion foundation | `src/ingestion`, `src/transformations`, `sql/*.sql`, notebooks 01–04 | `tests/integration/test_pipeline.py` | ✅ |
-| 4 | Deterministic logic + tools | `src/rules`, `src/scoring`, `src/verification`, `src/tools`, engine | unit tests per module, `test_scenario_manifest.py` | ✅ |
-| 5 | Agent + tracing | `src/agents`, `src/services/activity.py`, `tracing.py` | `test_agents.py`, `test_agent_tools_interaction.py` | ✅ |
-| 6 | Review, adapter, verification | `review_service`, `action_service`, `refresh_service`, `src/adapters` | `test_review_action.py`, `test_adapter.py`, e2e | ✅ |
-| 7 | API + App | `src/api`, `app/` | `test_api.py` | ✅ |
-| 8 | Evaluation, reset, neutrality, deployment | `src/evaluation`, `src/quality`, notebooks 05–07, scripts, app deployment | `test_evaluation.py`, `test_customer_neutrality.py` | ✅ |
+| 1 | Document and design | `README.md`, 16 docs, ADRs, config | — | Done |
+| 2 | Synthetic data + manifest | `src/data_generation`, `data/generated/*.csv` | `tests/unit/test_data_generation.py` | Done |
+| 3 | Medallion foundation | `src/ingestion`, `src/transformations`, `sql/*.sql`, notebooks 01–04 | `tests/integration/test_pipeline.py` | Done |
+| 4 | Deterministic logic + tools | `src/rules`, `src/scoring`, `src/verification`, `src/tools`, engine | unit tests per module, `test_scenario_manifest.py` | Done |
+| 5 | Agent + tracing | `src/agents`, `src/services/activity.py`, `tracing.py` | `test_agents.py`, `test_agent_tools_interaction.py` | Done |
+| 6 | Review, adapter, verification | `review_service`, `action_service`, `refresh_service`, `src/adapters` | `test_review_action.py`, `test_adapter.py`, e2e | Done |
+| 7 | API + App | `src/api`, `app/` | `test_api.py` | Done |
+| 8 | Evaluation, reset, neutrality, deployment | `src/evaluation`, `src/quality`, notebooks 05–07, scripts, app deployment | `test_evaluation.py`, `test_customer_neutrality.py` | Done |
 
 ## Verification status (2026-10-10)
 

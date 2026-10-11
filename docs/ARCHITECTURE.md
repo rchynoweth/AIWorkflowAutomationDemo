@@ -74,6 +74,23 @@ serverless with a 10-minute auto-stop. The LLM is a pay-per-token Foundation Mod
 provisioned throughput). Databricks Apps do not auto-suspend, so the app is stopped when not presenting
 (`databricks apps stop loan-servicing-intelligence`).
 
+## 3a. Always-on backend workflow
+
+```text
+lsi-servicing-monitor (serverless, every 30 min; created paused)
+  ingest (02) -> silver (03) -> refresh_verify (09) -> rules_and_scores (04) -> agent_triage (08)
+                                                                           -> ai_insights (10, ai_query)
+```
+
+- **ingest / silver:** new servicing exports in the landing volume flow to Bronze and Silver.
+- **refresh_verify:** advances the refresh cycle, applies System-of-Record events, verifies submitted actions.
+- **rules_and_scores:** full re-evaluation into Gold (conditions, escalation, scores, queue, verification).
+- **agent_triage:** the tool-calling agent (Claude via Foundation Model API) investigates the highest-priority
+  loans without a current AI proposal; proposals wait for human approval.
+- **ai_insights:** Databricks AI Functions (`ai_query`) write per-loan summaries and a portfolio briefing.
+
+The app shows run status, can start a run (job resource with CAN_MANAGE_RUN), and syncs results.
+
 ## 4. Runtime topology of the app
 
 The App container runs one Streamlit process. On first load, Streamlit starts the FastAPI app (uvicorn) on a

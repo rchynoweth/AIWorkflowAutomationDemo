@@ -62,3 +62,20 @@ def test_ask_briefing_and_evaluation(client):
 def test_validation_errors(client):
     assert client.post("/api/agent", json={"mode": "assess"}).status_code == 422
     assert client.post("/api/recommendations/NOPE/decision", json={"decision": "APPROVE"}).status_code == 404
+
+
+def test_batch_triage_and_reload(client):
+    out = client.post("/api/agent/batch", json={"loan_ids": ["LSI-SYN-000006", "LSI-SYN-000007"]}).json()
+    assert out["analyzed"] == 2 and all(r["recommended_action"] for r in out["results"])
+    recs = client.get("/api/loans/LSI-SYN-000006/recommendations").json()
+    assert recs[0]["status"] == "PENDING_REVIEW"
+    reloaded = client.post("/api/reload").json()
+    assert reloaded["recommendations"] >= 2
+    assert client.get("/api/loans/LSI-SYN-000006/recommendations").json()[0]["recommendation_id"] == \
+        recs[0]["recommendation_id"]
+
+
+def test_queue_reports_recommendation_source(client):
+    client.post("/api/agent/batch", json={"loan_ids": ["LSI-SYN-000006"]})
+    row = next(r for r in client.get("/api/portfolio/priority-queue").json() if r["loan_id"] == "LSI-SYN-000006")
+    assert row["recommendation_source"] == "deterministic"

@@ -36,7 +36,7 @@ def build_pages() -> dict:
     })
     return {
         "Demo": [PAGES["story"], PAGES["how_it_works"]],
-        "Operations": [PAGES["home"], PAGES["priority_queue"], PAGES["loan_360"], PAGES["portfolio"]],
+        "Operations": [PAGES["home"], PAGES["portfolio"], PAGES["priority_queue"], PAGES["loan_360"]],
         "Trust": [PAGES["agent_activity"], PAGES["evaluation"]],
     }
 
@@ -62,7 +62,7 @@ def header() -> dict:
 def sidebar() -> None:
     client = get_client()
     with st.sidebar:
-        st.toggle("🎤 Presenter notes", value=True, key="presenter_notes",
+        st.toggle("Presenter notes", value=True, key="presenter_notes",
                   help="Show talk-track callouts on each page (from config/demo_story.yml).")
         labels = [f"{name} · {role.replace('_', ' ').title()}" for _, name, role in REVIEWERS]
         idx = st.selectbox("Acting as", range(len(REVIEWERS)), format_func=lambda i: labels[i], key="reviewer_idx")
@@ -75,6 +75,7 @@ def sidebar() -> None:
             except ApiError as exc:
                 st.session_state["flash"] = f"Refresh failed: {exc.detail}"
             st.rerun()
+        _backend_panel(client)
         with st.expander("Demo controls"):
             st.caption("Clears decisions, actions, verification, activity, and simulated System-of-Record updates.")
             if st.button("Reset demo", icon=":material/restart_alt:", use_container_width=True):
@@ -89,6 +90,58 @@ def sidebar() -> None:
                        f"({health.get('model_endpoint')})")
         st.caption("Synthetic data only. No production system is connected. Every consequential action requires "
                    "human approval.")
+
+
+def _backend_panel(client) -> None:
+    """Live status of the Databricks backend workflow, with run-now and sync."""
+    with st.expander("Databricks backend", icon=":material/settings_suggest:"):
+        try:
+            status = _cached_backend_status(client)
+        except ApiError as exc:
+            st.caption(f"Backend status unavailable: {exc.detail}")
+            return
+        monitor = next((w for w in status.get("workflows", []) if w.get("name") == "lsi-servicing-monitor"), None)
+        if not status.get("available") or not monitor or not monitor.get("found"):
+            st.caption("Servicing monitor workflow not found in this workspace.")
+            return
+        last = monitor["runs"][0] if monitor["runs"] else None
+        schedule = "every 30 min" if monitor.get("schedule") else "manual"
+        if monitor.get("schedule_paused"):
+            schedule += " (paused)"
+        st.caption(f"lsi-servicing-monitor - {schedule}")
+        if last:
+            st.markdown(f"Last run: **{nice_state(last['state'])}**<br>"
+                        f"<span style='font-size:0.8rem; color:#667085'>{last.get('start_time') or ''} UTC</span>",
+                        unsafe_allow_html=True)
+            if last.get("run_page_url"):
+                st.link_button("Open run in Databricks", last["run_page_url"], use_container_width=True)
+        if st.button("Run workflow now", icon=":material/play_arrow:", use_container_width=True):
+            try:
+                run = client.run_monitor()
+                st.session_state["flash"] = f"Started servicing monitor run {run['run_id']}"
+                _cached_backend_status.clear()
+            except ApiError as exc:
+                st.session_state["flash"] = f"Could not start: {exc.detail}"
+            st.rerun()
+        if status.get("newer_than_app"):
+            st.info("The workflow produced newer results.")
+        if st.button("Sync results into the app", icon=":material/cloud_sync:", use_container_width=True,
+                     type="primary" if status.get("newer_than_app") else "secondary"):
+            with st.spinner("Reloading from Delta tables..."):
+                res = client.reload()
+            st.session_state["flash"] = f"Synced: {res['recommendations']} recommendations, cycle {res['refresh_cycle']}"
+            st.session_state.pop("briefing", None)
+            _cached_backend_status.clear()
+            st.rerun()
+
+
+@st.cache_data(ttl=30, show_spinner=False)
+def _cached_backend_status(_client) -> dict:
+    return _client.backend()
+
+
+def nice_state(state: str | None) -> str:
+    return (state or "").replace("_", " ").title()
 
 
 def flash() -> None:

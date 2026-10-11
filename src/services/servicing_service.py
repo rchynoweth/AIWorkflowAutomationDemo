@@ -355,6 +355,76 @@ class LoanServicingService:
             self._persist_activity(buffer)
         return {"run_id": run.run_id, "facts": facts, **result}
 
+    def triage_candidates(self, limit: int = 10) -> list[str]:
+        """Highest-scoring attention loans without a current LLM recommendation (demo spotlight loans excluded)."""
+        exclude = set(self.settings.demo_scenarios.get("baseline_recommendations", {}).get("exclude_loans", []))
+        ids = []
+        for r in sorted(self.evaluation.active_results(), key=lambda r: (-r["attention_score"], r["loan_id"])):
+            if not r["needs_attention"] or r["loan_id"] in exclude:
+                continue
+            latest = next((x for x in self.ops.recommendations_for(r["loan_id"]) if x.get("status") != "SUPERSEDED"),
+                          None)
+            if latest and latest.get("agent_mode") == "llm" and latest.get("state_fingerprint") == r["state_fingerprint"]:
+                continue
+            ids.append(r["loan_id"])
+            if len(ids) >= limit:
+                break
+        return ids
+
+    def triage(self, loan_ids: list[str] | None = None, limit: int = 10, agent_mode: str | None = None,
+               max_workers: int = 4, actor: str = "agent") -> dict:
+        """Run the agent on several loans in parallel and persist the proposals (awaiting human review)."""
+        from concurrent.futures import ThreadPoolExecutor
+
+        with self.lock:
+            ctx = self.tool_ctx
+            ids = [self._require_loan(lid) for lid in loan_ids] if loan_ids else self.triage_candidates(limit)
+        agent = self.agent(agent_mode)
+
+        def assess(lid: str):
+            buffer = ActivityBuffer(actor)
+            run = RunContext(run_id=new_run_id("TRI"), tool_ctx=ctx, settings=self.settings, on_activity=buffer)
+            try:
+                result = agent.assess_loan(lid, run)
+            except Exception as exc:  # noqa: BLE001 - a failed loan never blocks the batch
+                result = {"recommendation": None, "error": f"{type(exc).__name__}: {exc}", "agent_mode": agent.mode}
+            return lid, result, buffer
+
+        started = time.perf_counter()
+        with ThreadPoolExecutor(max_workers=max(1, max_workers)) as pool:
+            outcomes = list(pool.map(assess, ids))
+        with self.lock:
+            changed: dict[str, dict] = {}
+            activity: list[dict] = []
+            rows = []
+            for lid, result, buffer in outcomes:
+                rec = result.get("recommendation")
+                if rec:
+                    for old in self.ops.recommendations_for(lid):
+                        if old.get("status") == "PENDING_REVIEW":
+                            old["status"] = "SUPERSEDED"
+                            changed[old["recommendation_id"]] = old
+                    self.ops.recommendations[rec["recommendation_id"]] = rec
+                    changed[rec["recommendation_id"]] = rec
+                activity.extend(buffer.records)
+                state = self.evaluation.results[lid]
+                rows.append({"loan_id": lid, "priority": state["priority"], "condition": state["primary_condition"],
+                             "agent_mode": result.get("agent_mode"),
+                             "recommended_action": (rec or {}).get("recommended_action"),
+                             "confidence": (rec or {}).get("confidence"), "error": result.get("error")})
+            self.repository.upsert("ops_recommendations", list(changed.values()))
+            if activity:
+                self.ops.activity.extend(activity)
+                self.repository.upsert("ops_agent_activity", activity)
+        return {"analyzed": len(rows), "results": rows, "seconds": round(time.perf_counter() - started, 1)}
+
+    def reload(self) -> dict:
+        """Re-read source and operational state (e.g. after the backend workflow ran)."""
+        self.repository.flush()
+        self.load()
+        return {"reloaded_at": self.loaded_at, "recommendations": len(self.ops.recommendations),
+                "refresh_cycle": self.ops.refresh_cycle}
+
     def generate_baseline_recommendations(self) -> int:
         """Deterministic recommendations for attention candidates (no LLM cost)."""
         exclude = set(self.settings.demo_scenarios.get("baseline_recommendations", {}).get("exclude_loans", []))

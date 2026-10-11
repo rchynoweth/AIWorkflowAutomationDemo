@@ -20,7 +20,7 @@ def render(rec: dict | None, state: dict) -> None:
     follow = (f" · follow-up <b>{esc(rec.get('recommended_followup_date'))}</b>"
               if rec.get("recommended_followup_date") else "")
     st.markdown(
-        f'<div class="lsi-ai">✨ <b>Agent proposal</b> <span style="color:#667085">({mode})</span> '
+        f'<div class="lsi-ai"><b>Agent proposal</b> <span style="color:#667085">({mode})</span> '
         f'{badge(nice(rec["status"]), status_color)}'
         f'<div style="font-size:1.25rem; margin:6px 0"><b>{esc(nice(rec["recommended_action"]))}</b>{follow} '
         f'&nbsp; {badge("Confidence " + rec["confidence"].title(), "#344054")}</div>'

@@ -25,3 +25,7 @@ env:
     valueFrom: serving-endpoint
   - name: LSI_API_PORT
     value: "8001"
+  - name: LSI_MONITOR_JOB_ID
+    valueFrom: monitor-job
+  - name: LSI_PIPELINE_JOB_ID
+    valueFrom: pipeline-job

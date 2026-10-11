@@ -64,3 +64,14 @@ def test_baseline_recommendations_and_reset(tmp_path, settings):
     assert not excluded & {r["loan_id"] for r in svc.ops.recommendations.values()}
     out = svc.reset_demo()
     assert out["baseline_recommendations"] == n and svc.ops.refresh_cycle == 0
+
+
+def test_triage_candidates_skip_spotlight_and_current_llm(tmp_path, settings_no_baseline):
+    repo = LocalRepository(settings_no_baseline, source_dir=GENERATED, state_dir=tmp_path / "s")
+    svc = LoanServicingService(settings_no_baseline, repo, agent_mode="deterministic").load()
+    ids = svc.triage_candidates(limit=50)
+    assert "LSI-SYN-000005" not in ids and "LSI-SYN-000004" not in ids
+    assert len(ids) == len(set(ids)) == 50
+    out = svc.triage(loan_ids=ids[:3], max_workers=3)
+    assert out["analyzed"] == 3
+    assert {r["loan_id"] for r in out["results"]} == set(ids[:3])

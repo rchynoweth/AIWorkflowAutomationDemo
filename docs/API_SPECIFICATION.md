@@ -143,6 +143,16 @@ portfolio, verifies submitted actions. Response: `{"refresh_cycle", "verificatio
 ### `GET /api/agent/activity`
 Query: `loan_id, run_id, limit (default 300)`.
 
+## Backend workflow
+
+| Endpoint | Purpose |
+|----------|---------|
+| `POST /api/agent/batch` | `{"loan_ids": [...]}` or `{"limit": n}`: agent triage of several loans in parallel; proposals persist as PENDING_REVIEW. Response `{analyzed, seconds, results: [{loan_id, priority, condition, agent_mode, recommended_action, confidence, error}]}` |
+| `GET /api/backend/status` | Recent runs of `lsi-servicing-monitor` and `lsi-pipeline` (Jobs API), schedule, `newer_than_app`, latest AI Functions output |
+| `POST /api/backend/run-monitor` | Starts a run of `lsi-servicing-monitor` (app service principal has CAN_MANAGE_RUN) |
+| `GET /api/backend/resources` | Inventory of Databricks resource links built from the runtime workspace host |
+| `POST /api/reload` | Re-reads Silver and operational tables (after the workflow ran) |
+
 ## Operations
 
 | Endpoint | Purpose |
