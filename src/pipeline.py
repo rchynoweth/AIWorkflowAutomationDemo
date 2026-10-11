@@ -198,8 +198,9 @@ def agent_triage(spark, settings, limit: int = 10, agent_mode: str = "auto", max
 
 AI_LOAN_PROMPT = (
     "You summarize SYNTHETIC loan-servicing data for a servicing specialist. In one sentence of at most 30 words, "
-    "state why this loan needs attention and what to look at first. Use only these facts and do not give legal "
-    "or financial advice. Facts: "
+    "state why this loan needs attention and which servicing follow-up to check first. Use only these facts. Do not "
+    "give legal or financial advice and do not suggest legal outcomes (for example whether a sale should proceed). "
+    "Facts: "
 )
 AI_BRIEFING_PROMPT = (
     "Write a 3-sentence morning briefing for servicing managers from these SYNTHETIC portfolio facts. Use only "
