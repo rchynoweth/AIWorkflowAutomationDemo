@@ -49,4 +49,6 @@ limit = int(dbutils.widgets.get("triage_limit"))
 agent_mode = dbutils.widgets.get("agent_mode")
 result = pipeline.agent_triage(spark, settings, limit=limit, agent_mode=agent_mode)
 print(f"Analyzed {result['analyzed']} loans in {result['seconds']}s")
-display(spark.createDataFrame(result["results"]) if result["results"] else spark.createDataFrame([], "loan_id string"))
+import pandas as pd
+
+display(pd.DataFrame(result["results"]).fillna("").astype(str))

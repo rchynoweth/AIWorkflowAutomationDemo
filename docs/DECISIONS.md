@@ -95,7 +95,7 @@ Format: identifier, status, date documented, context, options, decision, rationa
 
 ## ADR-015 — AI Functions for SQL-native summaries
 - **Status:** Accepted · **Documented:** 2026-10-11
-- **Decision:** `ai_query('<endpoint>', prompt)` in the workflow writes `gold_ai_loan_insights` and `gold_ai_portfolio_briefing` from deterministic Gold facts.
+- **Decision:** `ai_query('<endpoint>', prompt)` (endpoint `agent.ai_functions_endpoint`, default `databricks-claude-sonnet-4-5`, because `databricks-claude-sonnet-5-5` is not enabled for batch inference) in the workflow writes `gold_ai_loan_insights` and `gold_ai_portfolio_briefing` from deterministic Gold facts.
 - **Rationale:** Shows Databricks AI Functions directly over governed tables, complementary to the tool-calling agent.
 - **Consequences:** Outputs are informational only (labeled AI-generated); no decision depends on them.
 

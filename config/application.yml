@@ -35,6 +35,7 @@ databricks:
 agent:
   mode: auto                # auto | llm | deterministic  (env: LSI_AGENT_MODE)
   model_endpoint: databricks-claude-sonnet-5-5   # pay-per-token Foundation Model API (env: LSI_MODEL_ENDPOINT)
+  ai_functions_endpoint: databricks-claude-sonnet-4-5   # ai_query batch inference (5.5 is not batch-enabled)
   max_tool_iterations: 12
   temperature: null        # omitted when null (some Claude endpoints reject the parameter)
   max_tokens: 2500

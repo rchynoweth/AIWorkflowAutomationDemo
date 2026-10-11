@@ -209,7 +209,7 @@ AI_BRIEFING_PROMPT = (
 
 def ai_insights(spark, settings, endpoint: str | None = None, limit: int = 25) -> dict:
     """Databricks AI Functions (ai_query) over Gold tables: per-loan summaries and a portfolio briefing."""
-    endpoint = endpoint or settings.agent["model_endpoint"]
+    endpoint = endpoint or settings.agent.get("ai_functions_endpoint") or settings.agent["model_endpoint"]
     t = lambda name: fq(settings, name)  # noqa: E731
     spark.sql(f"""
         CREATE OR REPLACE TABLE {t('gold_ai_loan_insights')}
