@@ -103,8 +103,9 @@ def render() -> None:
     except ApiError:
         inv = {}
     if inv.get("available"):
-        df = pd.DataFrame(inv["items"])[["resource", "what_it_is", "url"]]
-        st.dataframe(df.rename(columns={"resource": "Resource", "what_it_is": "What it is", "url": "Link"}),
+        df = pd.DataFrame(inv["items"])[["category", "resource", "what_it_is", "url"]]
+        st.dataframe(df.rename(columns={"category": "Type", "resource": "Resource", "what_it_is": "What it is",
+                                        "url": "Link"}),
                      hide_index=True, use_container_width=True,
                      column_config={"Link": st.column_config.LinkColumn(display_text="Open")})
     else:

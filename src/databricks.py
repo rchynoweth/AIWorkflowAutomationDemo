@@ -16,6 +16,8 @@ from datetime import datetime, timezone
 log = logging.getLogger(__name__)
 
 PIPELINE_JOB_NAME = "lsi-pipeline"
+ENDPOINT_NAME = os.environ.get("LSI_AGENT_ENDPOINT", "loan-servicing-agent")
+MODEL_NAME = "loan_servicing_agent"
 
 
 def _client():
@@ -122,48 +124,77 @@ def resource_inventory(settings) -> dict:
         org = ""
     cat, sch = settings.catalog, settings.schema
     vol = settings.application["databricks"]["landing_volume"]
+    app_name = os.environ.get("DATABRICKS_APP_NAME", "loan-servicing-intelligence")
     items = []
 
     def add(category: str, name: str, path: str, note: str) -> None:
         items.append({"category": category, "resource": name, "url": f"{host}{path}{org}", "what_it_is": note})
 
-    app_name = os.environ.get("DATABRICKS_APP_NAME", "loan-servicing-intelligence")
-    add("App", app_name, f"/apps/{app_name}", "Databricks App: Streamlit UI + in-process agent API")
-    for env_key, name, note in (("LSI_PIPELINE_JOB_ID", PIPELINE_JOB_NAME,
-                                 "Workflow: data pipeline, rules, AI Functions, agent reviews (serverless)"),):
-        try:
-            job_id = _job_id(w, env_key, name)
-            if job_id:
-                add("Workflow", name, f"/jobs/{job_id}", note)
-        except Exception:  # noqa: BLE001
-            pass
-    add("Unity Catalog", f"{cat}.{sch}", f"/explore/data/{cat}/{sch}", "Schema with Bronze, Silver, Gold, ops tables")
-    add("Unity Catalog", f"{cat}.{sch}.{vol}", f"/explore/data/volumes/{cat}/{sch}/{vol}",
-        "Landing volume for servicing export files")
-    for table, note in (("bronze_loan_events", "Raw events with lineage"),
-                        ("silver_loan_events", "Validated, sequenced events"),
-                        ("gold_loan_servicing_state", "Conditions, escalation, score per loan"),
-                        ("gold_priority_queue", "Ranked work queue"),
-                        ("gold_ai_loan_insights", "AI Functions (ai_query) summaries"),
-                        ("gold_agent_loan_reviews", "Reviews written by the deployed agent"),
-                        ("gold_ai_portfolio_briefing", "AI Functions portfolio briefing")):
-        add("Delta table", table, f"/explore/data/{cat}/{sch}/{table}", note)
-    add("Unity Catalog", "lsi_* functions", f"/explore/data/{cat}/{sch}", "SQL tool functions for agents and Genie")
-    if settings.warehouse_id:
-        add("Compute", "Serverless SQL warehouse", f"/sql/warehouses/{settings.warehouse_id}",
-            "Serves app reads/writes; auto-stops when idle")
-    endpoint = settings.agent.get("model_endpoint")
-    add("AI", endpoint, f"/ml/endpoints/{endpoint}", "Foundation Model API (pay-per-token) used by the agent")
-    add("AI", "MLflow experiments", "/ml/experiments", "Evaluation runs (loan-servicing-intelligence-evaluation)")
+    # The agent
+    add("Agent", ENDPOINT_NAME, f"/ml/endpoints/{ENDPOINT_NAME}",
+        "Loan Servicing Agent on Model Serving (scale-to-zero, real-time tracing)")
+    add("Agent", f"{cat}.{sch}.{MODEL_NAME}", f"/explore/data/models/{cat}/{sch}/{MODEL_NAME}",
+        "The agent's registered model and versions in Unity Catalog")
+    add("Agent", "lsi_* tool functions", f"/explore/data/{cat}/{sch}",
+        "The agent's 17 tools: Unity Catalog SQL functions (see the Functions list)")
     try:
-        app = w.apps.get(app_name)
-        src_path = (app.active_deployment.source_code_path if app.active_deployment else None) \
-            or app.default_source_code_path
-        if src_path:
-            folder_id = w.workspace.get_status(src_path).object_id
-            add("Code", "Git folder", f"/browse/folders/{folder_id}", "Repository synced from GitHub; notebooks and src/")
+        entities = w.serving_endpoints.get(ENDPOINT_NAME).config.served_entities or []
+        experiment_id = next((e.environment_vars or {}).get("MLFLOW_EXPERIMENT_ID") for e in entities
+                             if (e.environment_vars or {}).get("MLFLOW_EXPERIMENT_ID"))
+        add("Agent", "Traces and monitoring", f"/ml/experiments/{experiment_id}",
+            "MLflow experiment: every request traced, judges scoring production traffic")
     except Exception:  # noqa: BLE001
         pass
+    add("Agent", "AI Playground", "/ml/playground", "Chat with the deployed agent (select loan-servicing-agent)")
+
+    # Notebooks and workflow
+    source_path = None
+    try:
+        app = w.apps.get(app_name)
+        source_path = (app.active_deployment.source_code_path if app.active_deployment else None)             or app.default_source_code_path
+    except Exception:  # noqa: BLE001
+        pass
+    if source_path:
+        for notebook, note in (("05_agent_tools", "Where the agent's tools are defined (CREATE FUNCTION)"),
+                               ("06_build_and_deploy_agent", "Where the agent is written, tested, registered, deployed"),
+                               ("07_ai_functions", "Batch AI with ai_query in SQL"),
+                               ("08_agent_reviews", "Batch agent reviews of the work queue"),
+                               ("09_monitor_agent", "Traces, judges, and production monitoring"),
+                               ("04_build_gold", "The rules engine, walked through for one loan")):
+            try:
+                object_id = w.workspace.get_status(f"{source_path}/notebooks/{notebook}").object_id
+                add("Notebook", notebook, f"/editor/notebooks/{object_id}", note)
+            except Exception:  # noqa: BLE001
+                pass
+    try:
+        job_id = _job_id(w, "LSI_PIPELINE_JOB_ID", PIPELINE_JOB_NAME)
+        if job_id:
+            add("Workflow", PIPELINE_JOB_NAME, f"/jobs/{job_id}",
+                "Serverless workflow: Bronze, Silver, Gold, AI Functions, agent reviews")
+    except Exception:  # noqa: BLE001
+        pass
+
+    # Data
+    add("Data", f"{cat}.{sch}", f"/explore/data/{cat}/{sch}", "Unity Catalog schema: Bronze, Silver, Gold tables")
+    add("Data", f"{vol} volume", f"/explore/data/volumes/{cat}/{sch}/{vol}", "Landing volume for servicing exports")
+    for table, note in (("gold_priority_queue", "Ranked work queue from the rules engine"),
+                        ("gold_ai_loan_insights", "AI Functions summaries"),
+                        ("gold_agent_loan_reviews", "Reviews written by the agent")):
+        add("Data", table, f"/explore/data/{cat}/{sch}/{table}", note)
+
+    # Platform
+    endpoint = settings.agent.get("model_endpoint")
+    add("Platform", endpoint, f"/ml/endpoints/{endpoint}", "Claude on the Foundation Model API (pay-per-token)")
+    if settings.warehouse_id:
+        add("Platform", "Serverless SQL warehouse", f"/sql/warehouses/{settings.warehouse_id}",
+            "Runs the agent's tools and the app's queries; auto-stops")
+    add("Platform", app_name, f"/apps/{app_name}", "This Databricks App")
+    if source_path:
+        try:
+            add("Platform", "Git folder", f"/browse/folders/{w.workspace.get_status(source_path).object_id}",
+                "The repository, synced from GitHub")
+        except Exception:  # noqa: BLE001
+            pass
     return {"available": True, "host": host, "items": items}
 
 
@@ -171,8 +202,6 @@ def resource_inventory(settings) -> dict:
 # Client for the deployed Loan Servicing Agent (Model Serving) and its Unity Catalog toolset
 # ====================================================================================================
 
-ENDPOINT_NAME = os.environ.get("LSI_AGENT_ENDPOINT", "loan-servicing-agent")
-MODEL_NAME = "loan_servicing_agent"
 
 TOOL_GROUPS = {
     "lsi_get_loan_context": "Loan facts", "lsi_get_event_history": "Loan facts",
