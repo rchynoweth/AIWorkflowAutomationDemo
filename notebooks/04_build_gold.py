@@ -168,7 +168,7 @@ spark.sql(f"USE {dbutils.widgets.get('catalog')}.{dbutils.widgets.get('schema')}
 # MAGIC     AS required_party_type,
 # MAGIC   coalesce(p.active AND p.party_type = 'ATTORNEY', false) AS has_attorney,
 # MAGIC   coalesce(p.active AND p.party_type = 'VENDOR', false) AS has_vendor,
-# MAGIC   a.latest_action_id, a.latest_action_type, a.latest_action_status, coalesce(a.failed_actions, 0) AS failed_actions,
+# MAGIC   a.latest_action_id, a.latest_action_type, a.latest_action_status, CAST(coalesce(a.failed_actions, 0) AS INT) AS failed_actions,
 # MAGIC   coalesce(d.rejected_actions, array()) AS rejected_actions,
 # MAGIC   coalesce(d.deferred, false) AS deferred
 # MAGIC FROM silver_loans l
@@ -297,7 +297,7 @@ spark.sql(f"USE {dbutils.widgets.get('catalog')}.{dbutils.widgets.get('schema')}
 # MAGIC ),
 # MAGIC scored AS (
 # MAGIC   SELECT *,
-# MAGIC          CAST(greatest(0, least(100, aggregate(score_drivers, 0L, (total, d) -> total + d.points))) AS INT) AS attention_score
+# MAGIC          greatest(0, least(100, aggregate(score_drivers, 0, (total, d) -> total + d.points))) AS attention_score
 # MAGIC   FROM drivers
 # MAGIC ),
 # MAGIC prioritized AS (
