@@ -82,7 +82,7 @@ for message in history:
         if message["role"] == "assistant":
             ui.agent_answer(message)
         else:
-            st.markdown(message["content"])
+            st.markdown(ui.md(message["content"]))
 if history and st.button("Clear conversation", icon=":material/delete:"):
     st.session_state["agent_chat"] = []
     st.rerun()

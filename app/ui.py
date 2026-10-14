@@ -58,10 +58,15 @@ def card(label: str, value, color: str | None = None) -> str:
     return f'<div class="lsi-card"><div class="label">{esc(label)}</div><div class="value"{style}>{value}</div></div>'
 
 
+def md(text: str | None) -> str:
+    """Model text as Markdown, with dollar signs escaped so amounts are not rendered as math (LaTeX)."""
+    return (text or "").replace("$", r"\$")
+
+
 def ai_box(text: str, source: str, key: str) -> None:
     """Purple panel for AI-generated text (rendered as Markdown) with where it came from."""
     with st.container(key=f"aibox_{key}"):
-        st.markdown(text)
+        st.markdown(md(text))
         st.caption(source)
 
 
@@ -161,7 +166,7 @@ def agent_answer(result: dict) -> None:
                     st.dataframe(pd.DataFrame(json.loads(step["output"] or "{}").get("rows", [])), hide_index=True)
                 except (ValueError, TypeError):
                     st.code(str(step["output"])[:1500])
-    st.markdown(result.get("answer") or "")
+    st.markdown(md(result.get("answer")))
 
 
 PRESETS = {
