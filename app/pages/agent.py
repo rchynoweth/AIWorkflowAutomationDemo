@@ -6,7 +6,7 @@ import json
 import pandas as pd
 import streamlit as st
 
-from app.ui import active_chapter_banner, badge, esc, notes
+from app.ui import badge, esc, notes
 from app.client import ApiError, get_client
 
 PROMPTS = [
@@ -130,8 +130,7 @@ def _chat(client, dep: dict) -> None:
 
 
 def render() -> None:
-    active_chapter_banner("agent")
-    st.markdown("## Meet the agent")
+    st.markdown("## The agent")
     notes("agent")
     client = get_client()
     try:

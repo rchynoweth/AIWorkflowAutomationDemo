@@ -61,8 +61,7 @@ def main() -> None:
     except Exception:  # noqa: BLE001
         print("NOTE: agent endpoint loan-servicing-agent not deployed yet (notebooks/11_deploy_agent.py)")
     for resource_name, job_name, permission in (
-            ("monitor-job", "lsi-servicing-monitor", apps.AppResourceJobJobPermission.CAN_MANAGE_RUN),
-            ("pipeline-job", "lsi-pipeline", apps.AppResourceJobJobPermission.CAN_VIEW)):
+            ("pipeline-job", "lsi-pipeline", apps.AppResourceJobJobPermission.CAN_MANAGE_RUN),):
         found = list(w.jobs.list(name=job_name))
         if found:
             resources.append(apps.AppResource(name=resource_name, description=f"Databricks Workflow {job_name}",

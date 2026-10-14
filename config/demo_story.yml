@@ -1,204 +1,28 @@
-# Demo storyline and presenter talk track (shown in the app when "Presenter notes" is on).
-# Each chapter has two tracks: "say" (the servicing use case) and "databricks" (the platform capability).
-# Edit freely; no code changes needed. All data in the demo is synthetic.
-
-story:
-  title: "From one loan at a time to the whole portfolio - on Databricks"
-  promise: >-
-    Agents do the investigative work. People make the consequential decisions. The servicing platform stays the
-    System of Record. Databricks provides the governed data, the always-on pipelines, the models, and the app.
-  chapters:
-    - id: scene
-      title: "Set the scene"
-      page: how_it_works
-      minutes: 2
-      goal: "Frame the problem, the operating principle, and the platform."
-      say:
-        - "Today a specialist opens one loan at a time, reads the history, works out the milestone, checks dates, and keys follow-ups by hand."
-        - "We flip it: the platform watches every loan, every cycle. Rules find the facts, an AI agent investigates and drafts, a person decides."
-      databricks:
-        - "Everything you will see runs on one platform: Delta Lake and Unity Catalog for governed data, serverless Workflows for the pipelines, the Foundation Model API for the agent, and a Databricks App for the experience."
-        - "No clusters to manage - every component is serverless and scales to zero when idle."
-      click: "Walk the three pillars and the architecture diagram."
-    - id: backend
-      title: "Always-on backend"
-      page: how_it_works
-      minutes: 3
-      goal: "Show that data and agent work are produced continuously behind the scenes."
-      say:
-        - "Nobody pushes a button to make this queue. Servicing exports land, and a workflow re-evaluates the portfolio, verifies yesterday's actions, and has the agent triage new high-priority loans before the team logs in."
-        - "The agent's overnight work shows up as proposals waiting for approval - it never acts on its own."
-      databricks:
-        - "This is a Databricks Workflow on serverless compute: ingest to Bronze, Silver, verification, Gold, then two AI tasks in parallel."
-        - "Agent triage calls Claude through the Foundation Model API using the same tools as the app. The AI insights task uses AI Functions - ai_query directly in SQL - to summarize loans into a Gold table."
-        - "Every table is governed in Unity Catalog with lineage from raw file to recommendation."
-      click: "Scroll to 'Always-on backend', show the live run status, then open the workflow or the resource inventory links in Databricks."
-    - id: meet_agent
-      title: "Meet the agent"
-      page: agent
-      minutes: 4
-      goal: "Show the deployed agent, its governed tools, and a live tool-calling run."
-      say:
-        - "This is the Loan Servicing Agent. Ask it why a loan is a priority and watch it pick its own tools - milestone, follow-ups, pending actions, prior rejections, score, allowed actions - before it answers."
-        - "It is read-only by design: it investigates and recommends; a specialist approves in the app."
-      databricks:
-        - "Built with the Mosaic AI Agent Framework, registered in Unity Catalog, and served on Model Serving with scale-to-zero."
-        - "Its tools are Unity Catalog SQL functions - governed, permissioned, documented - and every LLM and tool call is traced in MLflow. The same agent is available in the AI Playground."
-      click: "Click the first suggested question, open 'Tool calls and results', then scroll the tool catalog and open one tool in Unity Catalog."
-    - id: glance
-      title: "The portfolio at a glance"
-      page: home
-      minutes: 2
-      goal: "Portfolio-wide monitoring and an AI briefing grounded in facts."
-      say:
-        - "Every active loan was evaluated this cycle. These numbers are calculated by rules, not typed in."
-        - "The briefing is written by the agent, but only from the facts in the expander. If it invents a number, we reject it automatically."
-      databricks:
-        - "The numbers come straight from Gold Delta tables built by the workflow."
-        - "The briefing uses a pay-per-token Claude endpoint on Databricks - no data leaves the platform boundary."
-      click: "Point at Need attention and Critical, the top tasks, then the briefing and its facts."
-    - id: portfolio
-      title: "The whole book"
-      page: portfolio
-      minutes: 1
-      goal: "Every loan, searchable and ranked."
-      say:
-        - "This is the entire synthetic book - 1,500 loans - sorted by attention. Search or filter, click a loan to open it."
-      databricks:
-        - "Served from Delta through a serverless SQL warehouse that auto-stops when nobody is using it."
-      click: "Filter Health = Critical, then click a loan ID."
-    - id: queue
-      title: "Work arrives prioritized"
-      page: priority_queue
-      minutes: 2
-      goal: "Specialists receive work instead of searching for it."
-      say:
-        - "This is the specialist's day, ranked. Every row says why it's here, and what the agent suggests."
-        - "Rules baseline means a deterministic suggestion; AI agent means the agent investigated. Let's have the agent triage three more right now."
-      databricks:
-        - "The same agent code runs in the app and in the backend workflow - one implementation, governed tools, consistent results."
-      click: "Analyze with agent (3 loans), show the results, then click LSI-SYN-000005."
-    - id: investigate
-      title: "Investigate one loan"
-      page: loan_360
-      loan_id: LSI-SYN-000005
-      minutes: 2
-      goal: "Deterministic facts and the event timeline."
-      say:
-        - "Title review follow-up is 18 days overdue. That's a rule fact with a rule ID, not an AI opinion."
-        - "The score adds up visibly: condition, days overdue, milestone severity. All configurable."
-      databricks:
-        - "Rules are configuration plus Python running on Delta data; they are also exposed as Unity Catalog SQL functions any agent or Genie space can call."
-      click: "Overview tab, then Timeline tab."
-    - id: agent
-      title: "The agent does the legwork"
-      page: loan_360
-      loan_id: LSI-SYN-000005
-      minutes: 3
-      goal: "Agent investigates with approved tools and proposes an allowed action."
-      say:
-        - "Run the agent. It decides which tools to call - context, milestone, duplicates, pending actions, prior rejections, score, allowed actions."
-        - "It may only recommend from the allowed list, it cannot change the score, and it states what it's unsure about. It drafted the note and the outreach; nothing has been sent."
-      databricks:
-        - "Tool calling against Claude on the Foundation Model API, governed by Unity Catalog permissions; every tool call is logged to a Delta table for audit."
-      click: "Agent & decision tab, Run agent analysis, open Evidence and Tool calls, then Ask: 'Why is this loan prioritized?'"
-    - id: decide
-      title: "A person decides"
-      page: loan_360
-      loan_id: LSI-SYN-000005
-      minutes: 2
-      goal: "Human-in-the-loop approval with revalidation."
-      say:
-        - "Approve, edit, reject, defer, or escalate. Let's edit the date and approve."
-        - "On approval we re-check everything: still current, no duplicate, no pending action, still allowed."
-      databricks:
-        - "Decisions are written to Delta with who, when, and what changed - a complete audit trail in Unity Catalog."
-      click: "Timeline tab: in the Proposed event panel adjust the date or note, then Confirm and schedule (or use the Agent & decision tab)."
-    - id: verify
-      title: "Execute and verify"
-      page: loan_360
-      loan_id: LSI-SYN-000005
-      minutes: 2
-      goal: "Controlled outbound event, System of Record, verification on refresh."
-      say:
-        - "This is the outbound event in the servicing system's format. We submit it through an adapter."
-        - "We don't trust the adapter's OK - on the next refresh we check the event actually landed, field by field."
-      databricks:
-        - "The refresh is the same step the workflow runs every cycle - in production, verification happens automatically after each export lands."
-      click: "Submit via synthetic adapter, Refresh source & verify, status Verified; the loan leaves the queue."
-    - id: failure
-      title: "When it goes wrong"
-      page: loan_360
-      loan_id: LSI-SYN-000004
-      minutes: 2
-      goal: "Failures come back to the queue automatically."
-      say:
-        - "This loan's adapter is configured to fail. The failure becomes a new condition, the score rises, and it returns to the queue with a retry recommendation."
-      databricks:
-        - "Exceptions are just data in Delta - they flow back through the same rules and queue, no separate tooling."
-      click: "Run agent, Approve, Submit, see Failed and Verification Failure."
-    - id: trust
-      title: "Trust and quality"
-      page: evaluation
-      minutes: 2
-      goal: "Rules and agent measured separately; everything traced."
-      say:
-        - "Rule quality must be 100% against known scenarios. Agent quality is measured separately: sensible, allowed actions with evidence."
-        - "Reviewer edits and rejections are signals for improvement, but nothing changes automatically."
-      databricks:
-        - "Evaluation runs log to MLflow; tool traces live in Delta; the evaluation itself is a task in the workflow."
-      click: "Show both sections, then Agent Activity for the trace."
-    - id: close
-      title: "Close"
-      page: how_it_works
-      minutes: 1
-      goal: "Restate the principle and the platform."
-      say:
-        - "Agents do the investigative work, people stay accountable, and the servicing platform remains the System of Record."
-      databricks:
-        - "One governed platform for data, pipelines, AI, and the application - serverless end to end. Everything shown is synthetic."
-      click: "Return to the architecture diagram."
+# Presenter talk track, shown on each page when "Presenter notes" is on (sidebar).
+# Two tracks per page: "story" (the servicing use case) and "databricks" (the platform capability).
+# Edit freely; no code changes needed. All data in the demo is synthetic; the AI outputs are real.
 
 page_notes:
-  home:
-    story:
-      - "Lead with scale: every active loan evaluated, no manual searching."
-      - "The briefing is AI-written but fact-checked against deterministic numbers."
-    databricks:
-      - "Numbers come from Gold Delta tables produced by the serverless workflow."
   portfolio:
     story:
-      - "The whole synthetic book, highest attention first. Click a loan ID to open it."
+      - "Every active loan is evaluated every cycle - nobody searches for work. The purple text was written by AI before anyone opened the app."
+      - "Agent review shows loans the agent already investigated overnight, with its recommended action."
     databricks:
-      - "Queried live through a serverless SQL warehouse that auto-stops."
-  priority_queue:
+      - "The AI summaries come from AI Functions - ai_query in a SQL notebook - and the reviews from the deployed agent, both in one serverless Databricks Workflow."
+      - "The app only reads Gold tables in Unity Catalog through a serverless SQL warehouse."
+  loan:
     story:
-      - "Work arrives ranked with a reason. 'AI agent' rows were investigated by the agent, in the backend or here."
+      - "Left: deterministic facts from the rules engine, each with a rule ID. Right: what the AI backend already concluded."
+      - "Run AI analysis now: the agent investigates live and shows every tool it chose. It recommends; a person decides."
     databricks:
-      - "Same agent code in the app and in the Databricks Workflow; Claude via the Foundation Model API."
-  loan_360:
-    story:
-      - "Blue boxes are rule facts. Purple is the agent's proposal. Nothing executes without your decision."
-      - "Suggested loans: LSI-SYN-000005 (main path), LSI-SYN-000004 (configured failure), LSI-SYN-000019 (looks urgent, already covered)."
-    databricks:
-      - "Tool calls and decisions are logged to Delta tables in Unity Catalog."
-  agent_activity:
-    story:
-      - "Every tool call is logged with summarized inputs and outputs - never prompts or hidden reasoning."
-    databricks:
-      - "Activity is a Delta table; actors include the app agent, reviewers, the adapter, and the backend workflow."
-  evaluation:
-    story:
-      - "Two questions: are the rules right (must be 100%), and is the agent helpful (measured over time)?"
-    databricks:
-      - "Evaluation runs are logged to MLflow."
+      - "The on-demand call goes to the Loan Servicing Agent on Model Serving; its tools are Unity Catalog functions and every call is traced in MLflow."
   agent:
     story:
-      - "Ask a loan question and watch the tool chain; then show the tool catalog."
+      - "Ask a loan question and watch the agent pick its own tools, then show the tool catalog."
     databricks:
-      - "Mosaic AI Agent Framework, Unity Catalog functions as tools, Model Serving, MLflow tracing, AI Playground."
+      - "Mosaic AI Agent Framework, registered in Unity Catalog, served on Model Serving with scale-to-zero; tools are governed Unity Catalog SQL functions; AI Playground and MLflow traces."
   how_it_works:
     story:
-      - "Use this page to set the scene, show the always-on backend, and answer architecture questions."
+      - "Databricks is the backend: one workflow builds the facts, the AI, and the agent reviews. The app is a thin window."
     databricks:
-      - "The resource inventory links straight to the workflow, tables, model endpoint, warehouse, and app."
+      - "Open the workflow run, the AI Functions notebook, and the agent in Databricks from the links at the bottom."

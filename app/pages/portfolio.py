@@ -1,42 +1,55 @@
-"""Portfolio: every synthetic loan; clicking a loan ID opens Loan 360."""
+"""Portfolio: every loan, with the AI that Databricks created for it."""
 from __future__ import annotations
 
-import pandas as pd
 import streamlit as st
 
 from app import ui
-from app.ui import active_chapter_banner, notes
 from app.client import get_client
 
-FILTERS = [
-    ("health", "health_segment", "Health"), ("priority", "priority", "Priority"),
-    ("milestone", "current_milestone", "Milestone"), ("state", "property_state", "State"),
-    ("portfolio", "portfolio_id", "Portfolio"), ("payment_status", "payment_status", "Payment status"),
-    ("foreclosure_status", "foreclosure_status", "Foreclosure status"), ("loan_status", "loan_status", "Loan status"),
-    ("specialist", "specialist_name", "Specialist"), ("agent_status", "agent_status", "Agent status"),
-]
+PRIORITIES = ["CRITICAL", "HIGH", "MEDIUM", "LOW"]
 
 
 def render() -> None:
-    active_chapter_banner("portfolio")
-    st.markdown("## Portfolio")
-    notes("portfolio")
     client = get_client()
-    df_all = pd.DataFrame(client.loans())
-    search = st.text_input("Search", key="pf_search", label_visibility="collapsed",
-                           placeholder="Search loan ID, synthetic borrower, state, or county")
-    filters = {}
-    with st.expander("Filters"):
-        cols = st.columns(5)
-        for i, (param, col, label) in enumerate(FILTERS):
-            options = sorted(o for o in df_all[col].dropna().astype(str).unique() if o and o != "None")
-            filters[param] = cols[i % 5].multiselect(label, options, key=f"pf_{param}")
-    params = {k: ",".join(v) for k, v in filters.items() if v}
-    rows = client.loans(search=search or None, **params)
+    st.markdown("## Portfolio")
+    ui.notes("portfolio")
+    summary = client.summary()
+    ai = client.backend_ai()
+    loans = [r for r in client.loans() if r["is_active"]]
+
+    reviews, insights = ai.get("reviews", {}), ai.get("insights", {})
+    cols = st.columns(4)
+    cols[0].markdown(ui.card("Active loans", f"{summary['active_loans']:,}"), unsafe_allow_html=True)
+    cols[1].markdown(ui.card("Need attention", f"{summary['need_attention']:,}", "#B54708"), unsafe_allow_html=True)
+    cols[2].markdown(ui.card("AI summaries", f"{len(insights):,}", "#6941C6"), unsafe_allow_html=True)
+    cols[3].markdown(ui.card("Reviewed by the agent", f"{len(reviews):,}", "#6941C6"), unsafe_allow_html=True)
+    st.write("")
+
+    briefing = ai.get("briefing")
+    if briefing:
+        ui.ai_box(briefing["briefing"], f"Portfolio briefing written in Databricks by ai_query "
+                                        f"({briefing.get('model_endpoint')}) at {briefing.get('generated_at')} UTC")
+    elif not ai.get("available"):
+        st.info(ai.get("reason", "Run the lsi-pipeline workflow to generate AI outputs."))
+    st.write("")
+
+    c1, c2, c3 = st.columns([3, 2, 1.4], vertical_alignment="bottom")
+    search = c1.text_input("Search", placeholder="Loan ID, synthetic borrower, state, or county",
+                           label_visibility="collapsed")
+    priority = c2.multiselect("Priority", PRIORITIES, placeholder="All priorities", label_visibility="collapsed",
+                              format_func=ui.nice)
+    only_ai = c3.toggle("Only loans with AI", value=True)
+
+    rows = loans
+    if search:
+        s = search.lower()
+        rows = [r for r in rows if s in f"{r['loan_id']} {r['borrower_display_name']} {r['property_state']} "
+                                         f"{r['property_county']}".lower()]
+    if priority:
+        rows = [r for r in rows if r["priority"] in priority]
+    if only_ai and (insights or reviews):
+        rows = [r for r in rows if r["loan_id"] in insights or r["loan_id"] in reviews]
     rows.sort(key=lambda r: (-int(r["attention_score"] or 0), r["loan_id"]))
-    st.caption(f"{len(rows):,} of {len(df_all):,} synthetic loans, highest attention first - click a loan ID to "
-               "open it")
-    ui.loan_list(rows, key="portfolio_list", page_size=15, columns=ui.PORTFOLIO)
-    with st.expander("Download view"):
-        st.download_button("Download CSV (synthetic)", pd.DataFrame(rows).to_csv(index=False),
-                           file_name="synthetic_portfolio.csv", mime="text/csv")
+    st.caption(f"{len(rows):,} of {len(loans):,} active synthetic loans, highest attention first. "
+               "Click a loan ID to open it.")
+    ui.loan_list(rows, ai, key="portfolio", columns=["loan", "priority", "condition", "score", "ai", "agent"])

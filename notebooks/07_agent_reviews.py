@@ -103,6 +103,13 @@ with ThreadPoolExecutor(max_workers=4) as pool:
     reviews = list(pool.map(review, queue))
 print(f"Agent reviewed {len(reviews)} loans")
 
+# Fail loudly if the agent could not use its tools (for example, missing permissions) rather than saving
+# empty reviews.
+broken = [r["loan_id"] for r in reviews if r["tool_call_count"] == 0 or "INSUFFICIENT_PERMISSIONS" in r["review"]]
+if broken:
+    raise RuntimeError(f"The agent could not use its Unity Catalog tools for {broken}. Redeploy the agent "
+                       "(notebook 08) after re-registering tools.")
+
 # COMMAND ----------
 
 # MAGIC %md

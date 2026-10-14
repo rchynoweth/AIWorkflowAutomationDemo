@@ -424,6 +424,7 @@ class LoanServicingService:
         self._agent_eval: dict | None = None
         self._baseline: PortfolioEvaluation | None = None
         self.loaded_at: str | None = None
+        self.backend_ai: dict = {"available": False, "insights": {}, "reviews": {}, "briefing": None}
 
     # ---- lifecycle ---------------------------------------------------------------------
     def load(self) -> "LoanServicingService":
@@ -437,6 +438,8 @@ class LoanServicingService:
             baseline = self.settings.demo_scenarios.get("baseline_recommendations", {})
             if baseline.get("enabled", True) and not self.ops.recommendations:
                 self.generate_baseline_recommendations()
+            from src.databricks import backend_ai
+            self.backend_ai = backend_ai(self.repository)
             self.loaded_at = utcnow()
             log.info("Service loaded in %.1fs (backend=%s)", time.perf_counter() - started, self.repository.backend)
         return self

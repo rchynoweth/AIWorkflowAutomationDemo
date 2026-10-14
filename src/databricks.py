@@ -15,7 +15,6 @@ from datetime import datetime, timezone
 
 log = logging.getLogger(__name__)
 
-MONITOR_JOB_NAME = "lsi-servicing-monitor"
 PIPELINE_JOB_NAME = "lsi-pipeline"
 
 
@@ -41,82 +40,73 @@ def _job_id(w, env_key: str, name: str) -> int | None:
 
 
 def workflow_status(limit: int = 5) -> dict:
-    """Recent runs of the servicing monitor and setup pipeline. Never raises."""
+    """Schedule and recent runs of the lsi-pipeline workflow. Never raises."""
     try:
         w = _client()
-    except Exception as exc:  # noqa: BLE001
-        return {"available": False, "reason": f"Databricks SDK unavailable: {exc}"}
-    out = {"available": True, "workflows": []}
-    for env_key, name in (("LSI_MONITOR_JOB_ID", MONITOR_JOB_NAME), ("LSI_PIPELINE_JOB_ID", PIPELINE_JOB_NAME)):
-        try:
-            job_id = _job_id(w, env_key, name)
-            if job_id is None:
-                out["workflows"].append({"name": name, "found": False})
-                continue
-            job = w.jobs.get(job_id)
-            schedule = job.settings.schedule
-            runs = []
-            for run in w.jobs.list_runs(job_id=job_id, limit=limit, expand_tasks=True):
-                state = run.state
-                runs.append({
-                    "run_id": run.run_id,
-                    "state": (state.result_state.value if state and state.result_state else
-                              state.life_cycle_state.value if state and state.life_cycle_state else "UNKNOWN"),
-                    "trigger": run.trigger.value if run.trigger else None,
-                    "start_time": _ts(run.start_time), "end_time": _ts(run.end_time),
-                    "duration_s": round((run.run_duration or 0) / 1000) if run.run_duration else None,
-                    "run_page_url": run.run_page_url,
-                    "tasks": [{"task": t.task_key, "state": (t.state.result_state.value if t.state and
-                                                             t.state.result_state else
-                                                             t.state.life_cycle_state.value if t.state else None)}
-                              for t in (run.tasks or [])],
-                })
-            out["workflows"].append({
-                "name": name, "found": True, "job_id": job_id,
-                "schedule": schedule.quartz_cron_expression if schedule else None,
-                "schedule_paused": (schedule.pause_status.value == "PAUSED") if schedule and schedule.pause_status else None,
-                "tasks": [t.task_key for t in job.settings.tasks or []],
-                "runs": runs,
+        job_id = _job_id(w, "LSI_PIPELINE_JOB_ID", PIPELINE_JOB_NAME)
+        if job_id is None:
+            return {"available": False, "reason": f"Workflow {PIPELINE_JOB_NAME} not found"}
+        job = w.jobs.get(job_id)
+        schedule = job.settings.schedule
+        runs = []
+        for run in w.jobs.list_runs(job_id=job_id, limit=limit, expand_tasks=True):
+            state = run.state
+            runs.append({
+                "run_id": run.run_id,
+                "state": (state.result_state.value if state and state.result_state else
+                          state.life_cycle_state.value if state and state.life_cycle_state else "UNKNOWN"),
+                "start_time": _ts(run.start_time), "end_time": _ts(run.end_time),
+                "duration_s": round(run.run_duration / 1000) if run.run_duration else None,
+                "run_page_url": run.run_page_url,
+                "tasks": {t.task_key: (t.state.result_state.value if t.state and t.state.result_state else
+                                       t.state.life_cycle_state.value if t.state else None) for t in (run.tasks or [])},
             })
-        except Exception as exc:  # noqa: BLE001 - status is informational
-            log.warning("workflow status failed for %s: %s", name, exc)
-            out["workflows"].append({"name": name, "found": False, "error": str(exc)[:300]})
-    return out
+        return {"available": True, "name": PIPELINE_JOB_NAME, "job_id": job_id,
+                "schedule_paused": (schedule.pause_status.value == "PAUSED") if schedule and schedule.pause_status
+                else None, "tasks": [t.task_key for t in job.settings.tasks or []], "runs": runs}
+    except Exception as exc:  # noqa: BLE001 - status is informational
+        return {"available": False, "reason": str(exc)[:300]}
 
 
-def run_monitor_now() -> dict:
+def run_pipeline_now() -> dict:
     w = _client()
-    job_id = _job_id(w, "LSI_MONITOR_JOB_ID", MONITOR_JOB_NAME)
+    job_id = _job_id(w, "LSI_PIPELINE_JOB_ID", PIPELINE_JOB_NAME)
     if job_id is None:
-        raise RuntimeError("Servicing monitor workflow not found")
-    run = w.jobs.run_now(job_id=job_id)
-    return {"job_id": job_id, "run_id": run.run_id}
+        raise RuntimeError(f"Workflow {PIPELINE_JOB_NAME} not found")
+    return {"job_id": job_id, "run_id": w.jobs.run_now(job_id=job_id).run_id}
 
 
-def latest_success_end(status: dict, name: str = MONITOR_JOB_NAME) -> str | None:
-    for wf in status.get("workflows", []):
-        if wf.get("name") == name:
-            for run in wf.get("runs", []):
-                if run["state"] == "SUCCESS" and run.get("end_time"):
-                    return run["end_time"]
+def latest_success_end(status: dict) -> str | None:
+    for run in status.get("runs", []):
+        if run["state"] == "SUCCESS" and run.get("end_time"):
+            return run["end_time"]
     return None
 
 
-def ai_insights(repository, limit: int = 8) -> dict:
-    """Rows produced by the AI Functions task (ai_query), when the Databricks backend is in use."""
+def backend_ai(repository) -> dict:
+    """AI created in Databricks: AI Functions summaries (notebook 06) and agent reviews (notebook 07)."""
+    empty = {"available": False, "insights": {}, "reviews": {}, "briefing": None}
     if getattr(repository, "backend", "local") != "databricks" or not hasattr(repository, "execute"):
-        return {"available": False, "reason": "AI Functions outputs are read from Databricks tables."}
-    try:
-        loans = repository.execute(
-            f"SELECT loan_id, priority, primary_condition, attention_score, ai_summary, "
-            f"CAST(generated_at AS STRING) AS generated_at FROM {repository.fq('gold_ai_loan_insights')} "
-            f"ORDER BY attention_score DESC, loan_id LIMIT {int(limit)}")
-        briefing = repository.execute(
-            f"SELECT briefing, CAST(generated_at AS STRING) AS generated_at "
-            f"FROM {repository.fq('gold_ai_portfolio_briefing')} LIMIT 1")
-        return {"available": True, "loans": loans, "briefing": briefing[0] if briefing else None}
-    except Exception as exc:  # noqa: BLE001
-        return {"available": False, "reason": f"Not yet generated ({str(exc)[:160]})"}
+        return {**empty, "reason": "AI outputs are read from Databricks Gold tables when running in Databricks."}
+    out = dict(empty, available=True)
+    queries = {
+        "insights": f"SELECT loan_id, ai_summary, model_endpoint, CAST(generated_at AS STRING) AS generated_at "
+                    f"FROM {repository.fq('gold_ai_loan_insights')}",
+        "reviews": f"SELECT loan_id, review, recommended_action, tools_called, CAST(tool_call_count AS INT) AS "
+                   f"tool_call_count, seconds, agent_endpoint, CAST(generated_at AS STRING) AS generated_at "
+                   f"FROM {repository.fq('gold_agent_loan_reviews')}",
+        "briefing": f"SELECT briefing, model_endpoint, CAST(generated_at AS STRING) AS generated_at "
+                    f"FROM {repository.fq('gold_ai_portfolio_briefing')} LIMIT 1",
+    }
+    for key, sql in queries.items():
+        try:
+            rows = repository.execute(sql)
+        except Exception as exc:  # noqa: BLE001 - table may not exist until the workflow runs
+            log.warning("backend AI read failed for %s: %s", key, exc)
+            continue
+        out[key] = rows[0] if key == "briefing" and rows else ({r["loan_id"]: r for r in rows} if key != "briefing"
+                                                                else None)
+    return out
 
 
 def resource_inventory(settings) -> dict:
@@ -139,8 +129,8 @@ def resource_inventory(settings) -> dict:
 
     app_name = os.environ.get("DATABRICKS_APP_NAME", "loan-servicing-intelligence")
     add("App", app_name, f"/apps/{app_name}", "Databricks App: Streamlit UI + in-process agent API")
-    for env_key, name, note in (("LSI_MONITOR_JOB_ID", MONITOR_JOB_NAME, "Recurring backend workflow (serverless)"),
-                                ("LSI_PIPELINE_JOB_ID", PIPELINE_JOB_NAME, "One-time setup pipeline (serverless)")):
+    for env_key, name, note in (("LSI_PIPELINE_JOB_ID", PIPELINE_JOB_NAME,
+                                 "Workflow: data pipeline, rules, AI Functions, agent reviews (serverless)"),):
         try:
             job_id = _job_id(w, env_key, name)
             if job_id:
@@ -155,9 +145,8 @@ def resource_inventory(settings) -> dict:
                         ("gold_loan_servicing_state", "Conditions, escalation, score per loan"),
                         ("gold_priority_queue", "Ranked work queue"),
                         ("gold_ai_loan_insights", "AI Functions (ai_query) summaries"),
-                        ("ops_recommendations", "Agent proposals awaiting human review"),
-                        ("ops_actions", "Approved actions and outbound events"),
-                        ("sor_servicing_events", "Simulated System of Record writes")):
+                        ("gold_agent_loan_reviews", "Reviews written by the deployed agent"),
+                        ("gold_ai_portfolio_briefing", "AI Functions portfolio briefing")):
         add("Delta table", table, f"/explore/data/{cat}/{sch}/{table}", note)
     add("Unity Catalog", "lsi_* functions", f"/explore/data/{cat}/{sch}", "SQL tool functions for agents and Genie")
     if settings.warehouse_id:

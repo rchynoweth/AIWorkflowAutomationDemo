@@ -103,8 +103,13 @@ def backend(service: LoanServicingService = Depends(svc)):
     latest = databricks.latest_success_end(status)
     status["newer_than_app"] = bool(latest and service.loaded_at and latest > service.loaded_at)
     status["app_loaded_at"] = service.loaded_at
-    status["ai_insights"] = databricks.ai_insights(service.repository)
     return jsonable_encoder(status)
+
+
+@app.get("/api/ai/backend")
+def backend_ai(service: LoanServicingService = Depends(svc)):
+    """AI created in Databricks: AI Functions summaries, agent reviews, and the portfolio briefing."""
+    return jsonable_encoder(service.backend_ai)
 
 
 @app.get("/api/backend/resources")
@@ -112,10 +117,10 @@ def resources(service: LoanServicingService = Depends(svc)):
     return jsonable_encoder(databricks.resource_inventory(service.settings))
 
 
-@app.post("/api/backend/run-monitor")
-def run_monitor():
+@app.post("/api/backend/run-pipeline")
+def run_pipeline():
     try:
-        return databricks.run_monitor_now()
+        return databricks.run_pipeline_now()
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=f"Could not start workflow: {str(exc)[:200]}") from exc
 

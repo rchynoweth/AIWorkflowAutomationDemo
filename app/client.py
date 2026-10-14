@@ -118,8 +118,11 @@ class ApiClient:
     def resources(self):
         return self.get("/api/backend/resources")
 
-    def run_monitor(self):
-        return self.post("/api/backend/run-monitor")
+    def run_pipeline(self):
+        return self.post("/api/backend/run-pipeline")
+
+    def backend_ai(self):
+        return self.get("/api/ai/backend")
 
     def verification(self):
         return self.get("/api/actions/verification")
@@ -162,4 +165,4 @@ def reviewer() -> tuple[str, str]:
 def open_loan(loan_id: str) -> None:
     st.session_state["selected_loan_id"] = loan_id
     from app.navigation import PAGES
-    st.switch_page(PAGES["loan_360"])
+    st.switch_page(PAGES["loan"])

@@ -45,7 +45,11 @@ print(f"Target: {settings.catalog}.{settings.schema} | processing date {settings
 # COMMAND ----------
 
 
-for name, statement in uc_function_statements(settings.catalog, settings.schema):
+# Existing functions are kept: replacing them would invalidate the deployed agent's scoped credentials.
+# Set replace_tools=true only when tool definitions change, then redeploy the agent (notebook 08).
+dbutils.widgets.dropdown("replace_tools", "false", ["false", "true"], "Replace existing tool functions")
+replace = dbutils.widgets.get("replace_tools") == "true"
+for name, statement in uc_function_statements(settings.catalog, settings.schema, replace=replace):
     spark.sql(statement)
     print(f"Registered {settings.catalog}.{settings.schema}.{name}")
 

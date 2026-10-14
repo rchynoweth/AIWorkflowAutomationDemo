@@ -55,7 +55,9 @@ def test_state_persists_across_reload(tmp_path, settings_no_baseline):
     assert svc2.evaluation.facts["LSI-SYN-000005"].latest_verification["verification_status"] == "VERIFIED"
 
 
-def test_baseline_recommendations_and_reset(tmp_path, settings):
+def test_baseline_recommendations_and_reset(tmp_path):
+    from src.config import load_settings
+    settings = load_settings(overrides={"demo_scenarios.baseline_recommendations": {"enabled": True, "exclude_loans": ["LSI-SYN-000005", "LSI-SYN-000004"]}})
     repo = LocalRepository(settings, source_dir=GENERATED, state_dir=tmp_path / "s")
     svc = LoanServicingService(settings, repo, agent_mode="deterministic").load()
     n = len(svc.ops.recommendations)

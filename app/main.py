@@ -13,11 +13,10 @@ import streamlit as st  # noqa: E402
 st.set_page_config(page_title="Loan Servicing Intelligence", page_icon=":material/account_balance:", layout="wide")
 
 from app.ui import inject_css  # noqa: E402
-from app.navigation import build_pages, flash, header, sidebar  # noqa: E402
+from app.navigation import build_pages, header, sidebar  # noqa: E402
 
 inject_css()
 navigation = st.navigation(build_pages())
 header()
 sidebar()
-flash()
 navigation.run()

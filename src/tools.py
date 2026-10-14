@@ -526,12 +526,15 @@ def tool_names() -> list[str]:
     return [name for name, _ in uc_function_statements("c", "s")]
 
 
-def uc_function_statements(catalog: str, schema: str) -> list[tuple[str, str]]:
+def uc_function_statements(catalog: str, schema: str, replace: bool = True) -> list[tuple[str, str]]:
+    """replace=False emits CREATE FUNCTION IF NOT EXISTS. Replacing creates new function objects, so the deployed
+    agent (whose credentials are scoped to the functions declared at deployment) must then be redeployed."""
     t = f"`{catalog}`.`{schema}`"
 
     def fn(name: str, params: str, returns: str, comment: str, body: str) -> tuple[str, str]:
         safe = comment.replace("'", "")
-        return name, (f"CREATE OR REPLACE FUNCTION {t}.`{name}`({params}) RETURNS TABLE ({returns}) "
+        create = "CREATE OR REPLACE FUNCTION" if replace else "CREATE FUNCTION IF NOT EXISTS"
+        return name, (f"{create} {t}.`{name}`({params}) RETURNS TABLE ({returns}) "
                       f"COMMENT '{safe} (synthetic demonstration data)' RETURN {body}")
 
     def loan(name: str) -> str:
