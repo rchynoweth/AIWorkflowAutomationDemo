@@ -1,47 +1,36 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Loan Servicing Intelligence — 02 · Ingest Bronze
+# MAGIC # 02 · Bronze: ingest the raw exports
 # MAGIC
-# MAGIC > **Synthetic demonstration data.** All loans, borrowers, rules, thresholds, and metrics are synthetic.
-# MAGIC
-# MAGIC Reads the landed CSV exports with Spark (all columns as strings, preserving source values) and writes `bronze_*` Delta tables with `source_file`, `ingested_at`, `batch_id`, `record_hash`, `source_row_number`.
-# MAGIC
-# MAGIC Runs on **serverless** compute. Core logic lives in `src/`; this notebook only orchestrates.
+# MAGIC Bronze keeps an **exact copy** of every source file as a Delta table, plus lineage columns, so every
+# MAGIC downstream fact can be traced back to the file and row it came from.
 
 # COMMAND ----------
 
-# MAGIC %pip install -q -r ../requirements-pipeline.txt
+dbutils.widgets.text("catalog", "main")
+dbutils.widgets.text("schema", "loan_servicing_intelligence")
+spark.sql(f"USE {dbutils.widgets.get('catalog')}.{dbutils.widgets.get('schema')}")
+landing = f"/Volumes/{dbutils.widgets.get('catalog')}/{dbutils.widgets.get('schema')}/landing/current"
 
 # COMMAND ----------
 
-dbutils.library.restartPython()
+from pyspark.sql import functions as F
+
+SOURCES = ["loans", "loan_events", "milestone_rules", "servicing_specialists", "attorneys_vendors",
+           "servicing_action_history", "reviewer_decisions"]
+
+for name in SOURCES:
+    raw = spark.read.option("header", True).option("multiLine", True).option("escape", '"').csv(f"{landing}/{name}.csv")
+    bronze = (raw
+              .withColumn("source_file", F.col("_metadata.file_path"))
+              .withColumn("ingested_at", F.current_timestamp())
+              .withColumn("record_hash", F.sha2(F.concat_ws("|", *raw.columns), 256)))
+    bronze.write.mode("overwrite").option("overwriteSchema", "true").saveAsTable(f"bronze_{name}")
+    print(f"bronze_{name:26s} {bronze.count():>7,} rows")
 
 # COMMAND ----------
 
-import os
-import sys
-
-dbutils.widgets.text("catalog", "main", "Catalog")
-dbutils.widgets.text("schema", "loan_servicing_intelligence", "Schema")
-dbutils.widgets.text("processing_date", "2026-10-12", "Processing date (demo)")
-
-os.environ["LSI_CATALOG"] = dbutils.widgets.get("catalog")
-os.environ["LSI_SCHEMA"] = dbutils.widgets.get("schema")
-os.environ["LSI_PROCESSING_DATE"] = dbutils.widgets.get("processing_date")
-os.environ["LSI_REPOSITORY_BACKEND"] = "databricks"
-
-REPO_ROOT = os.path.abspath(os.path.join(os.getcwd(), ".."))
-if REPO_ROOT not in sys.path:
-    sys.path.insert(0, REPO_ROOT)
-
-from src import pipeline  # noqa: E402
-from src.config import load_settings  # noqa: E402
-
-settings = load_settings()
-print(f"Repository: {REPO_ROOT}")
-print(f"Target: {settings.catalog}.{settings.schema} | processing date {settings.processing_date}")
-
-# COMMAND ----------
-
-result = pipeline.ingest_bronze(spark, settings)
-display(spark.createDataFrame([(k, v) for k, v in result["counts"].items()], "table string, rows long"))
+# MAGIC %sql
+# MAGIC SELECT loan_id, event_type, milestone_type, event_date, followup_date, status, source_file, ingested_at
+# MAGIC FROM bronze_loan_events
+# MAGIC LIMIT 10

@@ -46,7 +46,7 @@ synthetic history and live decisions separately and combined.
 
 ## 4. Procedure
 
-1. `notebooks/06_run_evaluation.py` (or `POST /api/evaluation/summary` in the app) evaluates the current
+1. `POST /api/evaluation/summary` (or `pytest tests/integration/test_pipeline_and_manifest.py`) evaluates the current
    portfolio against the manifest (rule metrics).
 2. Runs the agent on each scenario loan (deterministic by default; `agent_mode=llm` widget to evaluate the LLM).
 3. Writes row-level results to `gold_agent_evaluation` and logs aggregate metrics to an MLflow run

@@ -95,7 +95,7 @@ Full guide: [docs/DATABRICKS_DEPLOYMENT.md](docs/DATABRICKS_DEPLOYMENT.md).
 ## Demo mode
 
 Open the app on **Portfolio**, open a loan, run the on-demand AI analysis, then show the Databricks side: the
-`lsi-pipeline` workflow run, notebook `06_ai_functions` (AI Functions in SQL), notebook `07_agent_reviews` (the
+`lsi-pipeline` workflow run, notebook `07_ai_functions` (AI Functions in SQL), notebook `08_agent_reviews` (the
 deployed agent reviewing the queue), and the agent's Unity Catalog tools. Walkthrough:
 [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
 

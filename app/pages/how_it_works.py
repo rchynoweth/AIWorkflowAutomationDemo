@@ -30,9 +30,9 @@ digraph G {
 """
 
 AI_PLACES = [
-    ("AI Functions summaries", "06_ai_functions", "ai_query in SQL over Gold facts", "gold_ai_loan_insights"),
-    ("Portfolio briefing", "06_ai_functions", "ai_query over the portfolio facts", "gold_ai_portfolio_briefing"),
-    ("Agent reviews", "07_agent_reviews", "Deployed agent investigates the top of the queue",
+    ("AI Functions summaries", "07_ai_functions", "ai_query in SQL over Gold facts", "gold_ai_loan_insights"),
+    ("Portfolio briefing", "07_ai_functions", "ai_query over the portfolio facts", "gold_ai_portfolio_briefing"),
+    ("Agent reviews", "08_agent_reviews", "Deployed agent investigates the top of the queue",
      "gold_agent_loan_reviews"),
     ("On-demand analysis", "App - Loan page", "App calls the agent endpoint in real time", "(live, not stored)"),
 ]

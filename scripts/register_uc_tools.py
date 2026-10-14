@@ -23,11 +23,13 @@ def main() -> None:
     parser.add_argument("--warehouse-id", required=True)
     parser.add_argument("--catalog", default="main")
     parser.add_argument("--schema", default="loan_servicing_intelligence")
+    parser.add_argument("--replace", action="store_true",
+                        help="Replace existing functions (then redeploy the agent with notebook 06)")
     args = parser.parse_args()
     repo = DatabricksSqlRepository(load_settings(), warehouse_id=args.warehouse_id, catalog=args.catalog,
                                    schema=args.schema, async_writes=False)
     failures = 0
-    for name, statement in uc_function_statements(args.catalog, args.schema):
+    for name, statement in uc_function_statements(args.catalog, args.schema, replace=args.replace):
         try:
             repo.execute(statement)
             sample = SAMPLE_ARGS.get(name, "'LSI-SYN-000005'")

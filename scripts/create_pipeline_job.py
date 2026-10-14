@@ -1,14 +1,15 @@
 """Create or update the `lsi-pipeline` Databricks Workflow (serverless) that runs from the workspace Git folder.
 
-    generate -> bronze -> silver -> gold -> tools -------------+
-                                        -> ai_functions -------+-> agent_reviews
+    generate -> bronze -> silver -> gold -> ai_functions -> agent_reviews
+
+The agent's tools (notebook 05) and the agent itself (notebook 06) are set up once, outside this schedule.
 
 Usage:
   python scripts/create_pipeline_job.py --repo-path /Workspace/Users/<you>/AIWorkflowAutomationDemo [--run]
       [--catalog main] [--schema loan_servicing_intelligence] [--schedule-unpaused]
 
-No cluster is specified, so every task runs on serverless compute (nothing runs between runs). A schedule
-(every 30 minutes) is created PAUSED unless --schedule-unpaused is passed.
+No cluster is specified, so every task runs on serverless compute. The 30-minute schedule is created PAUSED
+unless --schedule-unpaused is passed.
 """
 from __future__ import annotations
 
@@ -23,9 +24,8 @@ TASKS = [  # task key, notebook, depends on
     ("bronze", "02_ingest_bronze", ["generate"]),
     ("silver", "03_build_silver", ["bronze"]),
     ("gold", "04_build_gold", ["silver"]),
-    ("tools", "05_register_agent_tools", ["gold"]),
-    ("ai_functions", "06_ai_functions", ["gold"]),
-    ("agent_reviews", "07_agent_reviews", ["tools", "ai_functions"]),
+    ("ai_functions", "07_ai_functions", ["gold"]),
+    ("agent_reviews", "08_agent_reviews", ["ai_functions"]),
 ]
 
 
@@ -48,7 +48,7 @@ def main() -> None:
     settings = {
         "name": JOB_NAME,
         "description": "Loan Servicing Intelligence (synthetic data): servicing exports -> Bronze -> Silver -> "
-                       "Gold rules -> Unity Catalog agent tools -> AI Functions -> agent reviews. Serverless.",
+                       "Gold rules -> AI Functions -> agent reviews. Serverless.",
         "tasks": tasks,
         "max_concurrent_runs": 1,
         "schedule": jobs.CronSchedule(quartz_cron_expression="0 0/30 * * * ?", timezone_id="UTC",

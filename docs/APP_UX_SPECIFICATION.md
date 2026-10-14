@@ -12,7 +12,7 @@
 
 ## 1. Portfolio (default page)
 - Four cards: active loans, need attention, AI summaries, reviewed by the agent.
-- AI portfolio briefing from `gold_ai_portfolio_briefing` (AI Functions, notebook 06).
+- AI portfolio briefing from `gold_ai_portfolio_briefing` (AI Functions, notebook 07).
 - Loan list (highest attention first): loan (click to open), priority, condition, score, **AI summary**
   (`gold_ai_loan_insights`), **Agent review** (recommended action and tool-call count from `gold_agent_loan_reviews`).
 - Search, priority filter, and "Only loans with AI" toggle.

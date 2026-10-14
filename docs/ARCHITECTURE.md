@@ -59,7 +59,7 @@ The code is deliberately flat so a reader can follow a whole concept in one file
    |
    |-- Serverless Job "lsi-pipeline" (notebook tasks, serverless compute, scales to zero)
    |      01_generate_demo_data -> 02_ingest_bronze -> 03_build_silver -> 04_build_gold
-   |      -> 05_register_agent_tools -> 06_run_evaluation        (07_reset_demo on demand)
+   |      -> 05_agent_tools -> 06_run_evaluation        (07_reset_demo on demand)
    |      writes: UC volume  main.loan_servicing_intelligence.landing
    |              Delta      main.loan_servicing_intelligence.{bronze_*, silver_*, gold_*, ops_*, sor_*}
    |              UC funcs   main.loan_servicing_intelligence.lsi_*

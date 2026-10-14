@@ -59,7 +59,7 @@ def main() -> None:
                 name="loan-servicing-agent",
                 permission=apps.AppResourceServingEndpointServingEndpointPermission.CAN_QUERY)))
     except Exception:  # noqa: BLE001
-        print("NOTE: agent endpoint loan-servicing-agent not deployed yet (notebooks/08_deploy_agent.py)")
+        print("NOTE: agent endpoint loan-servicing-agent not deployed yet (notebooks/06_build_and_deploy_agent.py)")
     for resource_name, job_name, permission in (
             ("pipeline-job", "lsi-pipeline", apps.AppResourceJobJobPermission.CAN_MANAGE_RUN),):
         found = list(w.jobs.list(name=job_name))

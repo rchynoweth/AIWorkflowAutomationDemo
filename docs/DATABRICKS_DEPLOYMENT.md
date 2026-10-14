@@ -45,7 +45,7 @@ Notebooks (Databricks source format, `notebooks/`), parameterized by widgets `ca
 | bronze | `02_ingest_bronze` | `bronze_*` with lineage columns (Spark CSV reader, all strings) |
 | silver | `03_build_silver` | `silver_*` (shared `src/medallion.py`; overlays `sor_servicing_events`) |
 | gold | `04_build_gold` | `gold_*`, baseline recommendations in `ops_recommendations`, verification results |
-| tools | `05_register_agent_tools` | UC SQL functions `lsi_*` |
+| tools | `05_agent_tools` | UC SQL functions `lsi_*` |
 | evaluate | `06_run_evaluation` | `gold_agent_evaluation`, MLflow run |
 | reset (manual) | `07_reset_demo` | Truncates ops/SoR tables, rebuilds silver/gold |
 
@@ -64,18 +64,18 @@ Alternatively deploy with Databricks Asset Bundles (`databricks.yml`, also serve
 
 `python scripts/create_pipeline_job.py --repo-path ... [--run]` creates one serverless job:
 `generate -> bronze -> silver -> gold -> (tools, ai_functions) -> agent_reviews`. Notebook 06 creates
-`gold_ai_loan_insights` and `gold_ai_portfolio_briefing` with `ai_query`; notebook 07 calls the deployed agent and
+`gold_ai_loan_insights` and `gold_ai_portfolio_briefing` with `ai_query`; notebook 08 calls the deployed agent and
 writes `gold_agent_loan_reviews`. The 30-minute schedule is created paused.
 
 **Tool functions and the agent:** the agent's credentials are scoped to the functions declared when it was
 deployed. Notebook 05 therefore creates only missing functions; if you change tool definitions, run it with
-`replace_tools=true` and then redeploy the agent (notebook 08). Notebook 07 fails loudly if the agent cannot use
+`replace_tools=true` and then redeploy the agent (notebook 06). Notebook 08 fails loudly if the agent cannot use
 its tools.
 
 ## 4b. Deployed agent
 
-1. Register tools: `python scripts/register_uc_tools.py --warehouse-id <id>` (or notebook 05).
-2. Run `notebooks/08_deploy_agent.py` (serverless, widget `warehouse_id`): logs the ResponsesAgent, registers
+1. Register tools: run notebook 05 (or `python scripts/register_uc_tools.py --warehouse-id <id>`).
+2. Run `notebooks/06_build_and_deploy_agent.py` (serverless, widget `warehouse_id`): logs the ResponsesAgent, registers
    `main.loan_servicing_intelligence.loan_servicing_agent`, deploys endpoint `loan-servicing-agent`
    (scale-to-zero, about 15-20 minutes the first time).
 3. Re-run `scripts/deploy_app.py` so the app gets CAN_QUERY on the endpoint and EXECUTE on the schema.

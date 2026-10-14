@@ -15,7 +15,7 @@ The executor wraps results as:
 
 Unknown loans return `success: false, error: "LOAN_NOT_FOUND"` — never fabricated defaults.
 
-Unity Catalog SQL functions (`notebooks/05_register_agent_tools.py`, prefix `lsi_`) expose read-only
+Unity Catalog SQL functions (`notebooks/05_agent_tools.py`, prefix `lsi_`) expose read-only
 structured tools over Gold tables for SQL clients, Genie, or MCP; the Python implementations remain the
 reference used by the app and tests.
 
@@ -41,7 +41,7 @@ reference used by the app and tests.
 | Portfolio | `lsi_specialist_workload()` | Per-specialist workload |
 | Portfolio | `lsi_get_failed_verifications()` | Actions that failed verification |
 
-Registered by `notebooks/05_register_agent_tools.py` or `scripts/register_uc_tools.py` (which also smoke-tests
+Registered by `notebooks/05_agent_tools.py` or `scripts/register_uc_tools.py` (which also smoke-tests
 each function).
 
 ## Python toolset (in-app agent)

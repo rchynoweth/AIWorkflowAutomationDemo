@@ -1,49 +1,57 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # Loan Servicing Intelligence — 01 · Generate synthetic demo data
+# MAGIC # 01 · Land the servicing exports
 # MAGIC
-# MAGIC > **Synthetic demonstration data.** All loans, borrowers, rules, thresholds, and metrics are synthetic.
-# MAGIC
-# MAGIC Creates the schema and landing volume, then writes deterministic synthetic CSV exports (fixed seed) to `/Volumes/<catalog>/<schema>/landing/current` and an archive batch folder.
-# MAGIC
-# MAGIC Runs on **serverless** compute. Core logic lives in `src/`; this notebook only orchestrates.
+# MAGIC In production, the servicing platform exports loans and servicing events every day. For this demo we
+# MAGIC generate **synthetic** exports (1,500 loans, ~33,000 events) and land them as CSV files in a
+# MAGIC **Unity Catalog volume**, exactly where real exports would arrive.
 
 # COMMAND ----------
 
-# MAGIC %pip install -q -r ../requirements-pipeline.txt
+# MAGIC %pip install -q pyyaml "pandas>=2.0,<3"
 
 # COMMAND ----------
 
-dbutils.library.restartPython()
+dbutils.widgets.text("catalog", "main")
+dbutils.widgets.text("schema", "loan_servicing_intelligence")
+catalog, schema = dbutils.widgets.get("catalog"), dbutils.widgets.get("schema")
+
+# COMMAND ----------
+
+# MAGIC %md ## 1. A governed home for the data
+
+# COMMAND ----------
+
+spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
+spark.sql(f"CREATE VOLUME IF NOT EXISTS {catalog}.{schema}.landing")
+landing = f"/Volumes/{catalog}/{schema}/landing/current"
+
+# COMMAND ----------
+
+# MAGIC %md ## 2. Generate the synthetic exports and land them in the volume
 
 # COMMAND ----------
 
 import os
 import sys
 
-dbutils.widgets.text("catalog", "main", "Catalog")
-dbutils.widgets.text("schema", "loan_servicing_intelligence", "Schema")
-dbutils.widgets.text("processing_date", "2026-10-12", "Processing date (demo)")
+sys.path.insert(0, os.path.abspath(".."))  # the repository root: the synthetic data generator lives in src/
+from src.synthetic_data import generate_dataset
 
-os.environ["LSI_CATALOG"] = dbutils.widgets.get("catalog")
-os.environ["LSI_SCHEMA"] = dbutils.widgets.get("schema")
-os.environ["LSI_PROCESSING_DATE"] = dbutils.widgets.get("processing_date")
-os.environ["LSI_REPOSITORY_BACKEND"] = "databricks"
-
-REPO_ROOT = os.path.abspath(os.path.join(os.getcwd(), ".."))
-if REPO_ROOT not in sys.path:
-    sys.path.insert(0, REPO_ROOT)
-
-from src import pipeline  # noqa: E402
-from src.config import load_settings  # noqa: E402
-
-settings = load_settings()
-print(f"Repository: {REPO_ROOT}")
-print(f"Target: {settings.catalog}.{settings.schema} | processing date {settings.processing_date}")
+dataset = generate_dataset()  # fixed seed: the same data every run
+os.makedirs(landing, exist_ok=True)
+for name, frame in dataset.tables().items():
+    frame.to_csv(f"{landing}/{name}.csv", index=False)
+    print(f"{name:28s} {len(frame):>7,} rows")
 
 # COMMAND ----------
 
-result = pipeline.generate_to_volume(spark, settings)
-print(f"Batch {result['batch_id']} -> {result['path']}")
-display(spark.createDataFrame([(k, v) for k, v in result["counts"].items()], "file string, rows long"))
-dbutils.jobs.taskValues.set("batch_id", result["batch_id"])
+# MAGIC %md ## 3. What landed
+
+# COMMAND ----------
+
+display(dbutils.fs.ls(landing))
+
+# COMMAND ----------
+
+display(spark.read.option("header", True).csv(f"{landing}/loan_events.csv").limit(10))

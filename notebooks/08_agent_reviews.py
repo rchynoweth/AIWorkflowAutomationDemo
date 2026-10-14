@@ -1,6 +1,6 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # 07 · Agent reviews: the Loan Servicing Agent investigates the queue
+# MAGIC # 08 · Agent reviews: the Loan Servicing Agent investigates the queue
 # MAGIC
 # MAGIC > Input data is **synthetic**. The reviews are **real**: produced by the deployed Loan Servicing Agent.
 # MAGIC
@@ -108,7 +108,7 @@ print(f"Agent reviewed {len(reviews)} loans")
 broken = [r["loan_id"] for r in reviews if r["tool_call_count"] == 0 or "INSUFFICIENT_PERMISSIONS" in r["review"]]
 if broken:
     raise RuntimeError(f"The agent could not use its Unity Catalog tools for {broken}. Redeploy the agent "
-                       "(notebook 08) after re-registering tools.")
+                       "(notebook 06) after re-registering tools.")
 
 # COMMAND ----------
 

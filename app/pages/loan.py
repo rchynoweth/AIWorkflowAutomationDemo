@@ -49,13 +49,13 @@ def _backend_ai(loan_id: str, ai: dict) -> None:
                 "Use the on-demand analysis below.")
         return
     if insight:
-        ui.ai_box(insight["ai_summary"], f"AI Functions: ai_query ({insight.get('model_endpoint')}) in notebook 06, "
+        ui.ai_box(insight["ai_summary"], f"AI Functions: ai_query ({insight.get('model_endpoint')}) in notebook 07, "
                                          f"{insight.get('generated_at')} UTC")
         st.write("")
     if review:
         action = ui.nice(review.get("recommended_action")) or "See review"
         ui.ai_box(f"Recommended action: {action}\n\n{review['review']}",
-                  f"Loan Servicing Agent ({review.get('agent_endpoint')}) in notebook 07 - "
+                  f"Loan Servicing Agent ({review.get('agent_endpoint')}) in notebook 08 - "
                   f"{review.get('tool_call_count')} tool calls: {review.get('tools_called')}")
 
 
