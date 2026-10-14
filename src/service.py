@@ -4,6 +4,7 @@ from __future__ import annotations
 import contextlib
 import json
 import logging
+import os
 import shutil
 import threading
 import time
@@ -71,7 +72,10 @@ class ActivityBuffer:
 
 @contextlib.contextmanager
 def trace_span(name: str, attributes: dict | None = None):
-    """MLflow span when mlflow is importable and tracing is configured; otherwise a no-op."""
+    """MLflow span when LSI_MLFLOW_TRACING=true and mlflow is importable; otherwise a no-op."""
+    if os.environ.get("LSI_MLFLOW_TRACING", "").lower() not in ("1", "true", "yes"):
+        yield None
+        return
     try:
         import mlflow  # type: ignore
     except Exception:  # noqa: BLE001

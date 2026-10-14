@@ -19,6 +19,8 @@ env:
     value: "loan_servicing_intelligence"
   - name: LSI_AGENT_MODE
     value: "auto"
+  - name: LSI_MLFLOW_TRACING
+    value: "true"
   - name: DATABRICKS_WAREHOUSE_ID
     valueFrom: sql-warehouse
   - name: LSI_MODEL_ENDPOINT

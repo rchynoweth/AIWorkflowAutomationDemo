@@ -230,3 +230,7 @@ data/processed/*
 .databricks/
 .streamlit/secrets.toml
 .vscode/
+
+# Local MLflow tracking artifacts
+mlflow.db
+mlruns/
