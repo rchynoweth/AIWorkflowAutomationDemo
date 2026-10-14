@@ -239,10 +239,9 @@ spark.sql(f"USE {dbutils.widgets.get('catalog')}.{dbutils.widgets.get('schema')}
 # MAGIC   FROM detected
 # MAGIC ),
 # MAGIC ranked AS (   -- one row per condition, with its precedence from the rules table
-# MAGIC   SELECT c.loan_id, x.code, x.rule_id, x.detail, r.precedence, r.points
-# MAGIC   FROM with_already_actioned c
-# MAGIC   LATERAL VIEW explode(c.conditions) AS x
-# MAGIC   JOIN rule_conditions r ON r.condition = x.code
+# MAGIC   SELECT c.loan_id, c.x.code, c.x.rule_id, c.x.detail, r.precedence, r.points
+# MAGIC   FROM (SELECT loan_id, explode(conditions) AS x FROM with_already_actioned) c
+# MAGIC   JOIN rule_conditions r ON r.condition = c.x.code
 # MAGIC ),
 # MAGIC primary AS (
 # MAGIC   SELECT loan_id,
