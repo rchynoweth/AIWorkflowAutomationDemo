@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC > **Synthetic demonstration data.** All loans, borrowers, rules, thresholds, and metrics are synthetic.
 # MAGIC
-# MAGIC Evaluates the full portfolio with the deterministic engine (conditions, escalation, scoring, allowed actions, verification), writes `gold_*` tables, creates portfolio/monitoring views, and generates baseline deterministic recommendations when none exist.
+# MAGIC Runs the deterministic rules engine (`src/rules.py`) over every loan: current milestone, follow-up status, conditions, escalation, attention score, allowed actions, and verification. Writes the `gold_*` tables the AI steps (06, 07) and the app read.
 # MAGIC
 # MAGIC Runs on **serverless** compute. Core logic lives in `src/`; this notebook only orchestrates.
 

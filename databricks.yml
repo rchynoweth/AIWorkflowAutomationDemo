@@ -51,9 +51,12 @@ resources:
         - task_key: tools
           depends_on: [{ task_key: gold }]
           notebook_task: { notebook_path: ./notebooks/05_register_agent_tools.py }
-        - task_key: evaluate
+        - task_key: ai_functions
           depends_on: [{ task_key: gold }]
-          notebook_task: { notebook_path: ./notebooks/06_run_evaluation.py }
+          notebook_task: { notebook_path: ./notebooks/06_ai_functions.py }
+        - task_key: agent_reviews
+          depends_on: [{ task_key: tools }, { task_key: ai_functions }]
+          notebook_task: { notebook_path: ./notebooks/07_agent_reviews.py }
 
   apps:
     loan_servicing_intelligence:

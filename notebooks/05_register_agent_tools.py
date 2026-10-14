@@ -55,4 +55,14 @@ display(spark.sql(f"SELECT * FROM `{settings.catalog}`.`{settings.schema}`.lsi_g
 
 # COMMAND ----------
 
-display(spark.sql(f"SELECT * FROM `{settings.catalog}`.`{settings.schema}`.lsi_priority_queue(10)"))
+# MAGIC %md
+# MAGIC ### The agent's toolset, as Unity Catalog sees it
+# MAGIC Each function's comment and parameter comments are exactly what the model reads when choosing a tool.
+
+# COMMAND ----------
+
+display(spark.sql(f"SHOW USER FUNCTIONS IN `{settings.catalog}`.`{settings.schema}` LIKE 'lsi_*'"))
+
+# COMMAND ----------
+
+display(spark.sql(f"DESCRIBE FUNCTION EXTENDED `{settings.catalog}`.`{settings.schema}`.lsi_get_attention_score"))
