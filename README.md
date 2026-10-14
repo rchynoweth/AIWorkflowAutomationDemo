@@ -43,8 +43,8 @@ The **Loan Servicing Agent** is also deployed as a Databricks agent (Mosaic AI A
 Catalog, served on Model Serving, with 17 Unity Catalog SQL functions as its governed tools. The app's *Meet the
 Agent* page shows it live.
 
-An always-on backend workflow (`lsi-servicing-monitor`) re-evaluates the portfolio, verifies actions, runs agent
-triage, and generates AI Functions summaries on a schedule, without anyone opening the app.
+One serverless workflow (`lsi-pipeline`) builds the Bronze/Silver/Gold data, runs the rules, creates AI summaries
+with AI Functions, and has the deployed agent review the top of the queue. The app reads the results.
 
 Serverless-first on Azure Databricks: serverless Jobs for the pipeline, a serverless SQL warehouse with
 auto-stop, pay-per-token Foundation Model API (`databricks-claude-sonnet-5-5`), and a Databricks App that is
@@ -60,7 +60,7 @@ app/                 Streamlit Databricks App: main, navigation, client, ui, pag
 config/              application, business rules, scoring, escalation, allowed actions, demo scenarios, talk track
 data/generated/      synthetic CSV exports (committed, reproducible)
 docs/                product, architecture, data, rules, agent, API, UX, evaluation, demo, deployment docs
-notebooks/           01-11 Databricks notebooks (thin orchestration of src/)
+notebooks/           01-07 lsi-pipeline workflow (06 AI Functions, 07 agent reviews), 08 deploy agent
 scripts/             job creation, app and agent deployment, UC tool registration
 sql/                 Bronze/Silver/Gold DDL and views
 tests/               unit, integration, end_to_end
@@ -94,11 +94,10 @@ Full guide: [docs/DATABRICKS_DEPLOYMENT.md](docs/DATABRICKS_DEPLOYMENT.md).
 
 ## Demo mode
 
-`DEMO_MODE=true` (default) uses the fixed seed and processing date (2026-10-12), deterministic scenarios
-(`LSI-SYN-000001`–`000020`), the synthetic adapter with configured failure/mismatch/duplicate/delay modes
-(`config/demo_scenarios.yml`), and a full reset (sidebar **Reset demo** or `POST /api/demo/reset`).
-Walkthrough: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md). In the app, start on **Demo Story** (guided chapters with
-presenter talk track) and **How It Works** (architecture, agent, automated vs human-in-the-loop).
+Open the app on **Portfolio**, open a loan, run the on-demand AI analysis, then show the Databricks side: the
+`lsi-pipeline` workflow run, notebook `06_ai_functions` (AI Functions in SQL), notebook `07_agent_reviews` (the
+deployed agent reviewing the queue), and the agent's Unity Catalog tools. Walkthrough:
+[docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
 
 ## Testing
 

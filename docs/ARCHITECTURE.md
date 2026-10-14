@@ -77,22 +77,19 @@ serverless with a 10-minute auto-stop. The LLM is a pay-per-token Foundation Mod
 provisioned throughput). Databricks Apps do not auto-suspend, so the app is stopped when not presenting
 (`databricks apps stop loan-servicing-intelligence`).
 
-## 3a. Always-on backend workflow
+## 3a. The lsi-pipeline workflow (Databricks backend)
 
 ```text
-lsi-servicing-monitor (serverless, every 30 min; created paused)
-  ingest (02) -> silver (03) -> refresh_verify (09) -> rules_and_scores (04) -> agent_triage (08)
-                                                                           -> ai_insights (10, ai_query)
+lsi-pipeline (serverless; schedule every 30 min, created paused)
+  generate (01) -> bronze (02) -> silver (03) -> gold (04, rules engine) -> tools (05, UC functions)  -+
+                                                                         -> ai_functions (06, ai_query) +-> agent_reviews (07)
 ```
 
-- **ingest / silver:** new servicing exports in the landing volume flow to Bronze and Silver.
-- **refresh_verify:** advances the refresh cycle, applies System-of-Record events, verifies submitted actions.
-- **rules_and_scores:** full re-evaluation into Gold (conditions, escalation, scores, queue, verification).
-- **agent_triage:** the tool-calling agent (Claude via Foundation Model API) investigates the highest-priority
-  loans without a current AI proposal; proposals wait for human approval.
-- **ai_insights:** Databricks AI Functions (`ai_query`) write per-loan summaries and a portfolio briefing.
+- **gold:** deterministic rules over every loan (conditions, escalation, score, allowed actions).
+- **ai_functions:** `ai_query` in SQL writes `gold_ai_loan_insights` and `gold_ai_portfolio_briefing`.
+- **agent_reviews:** the deployed Loan Servicing Agent reviews the top of the queue; results in `gold_agent_loan_reviews`.
 
-The app shows run status, can start a run (job resource with CAN_MANAGE_RUN), and syncs results.
+The app reads these Gold tables and calls the agent endpoint for on-demand analysis.
 
 ## 4. Runtime topology of the app
 

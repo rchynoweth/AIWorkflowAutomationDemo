@@ -38,7 +38,7 @@ fallback is recorded in the trace and the recommendation's `uncertainty`.
 ## 2a. Deployed Databricks agent (Mosaic AI Agent Framework)
 
 `agent_endpoint/loan_servicing_agent.py` is an MLflow **ResponsesAgent** (models-from-code) deployed by
-`notebooks/11_deploy_agent.py` (`src/databricks.py`):
+`notebooks/08_deploy_agent.py` (`src/databricks.py`):
 
 - **Model:** Claude via the Foundation Model API (`databricks-claude-sonnet-5-5`), tool calling.
 - **Tools:** the 17 Unity Catalog SQL functions `lsi_*` (`src/tools.py`). Tool names, descriptions,

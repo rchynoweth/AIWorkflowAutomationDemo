@@ -1,125 +1,41 @@
 # App UX Specification — Loan Servicing Intelligence
 
-> Every page shows the **Synthetic Demonstration Data** label. The app is an operations product with AI
-> embedded throughout, not a chatbot.
+> The app is a thin window onto the Databricks backend. It shows the **Synthetic Demonstration Data** label on
+> every page. Calm by default; detail on demand.
 
-- Framework: Streamlit (Databricks Apps compatible), `app/main.py` with `st.navigation`.
-- Title: **Loan Servicing Intelligence** — subtitle **Agent-powered portfolio monitoring and loan-servicing
-  workflow automation**.
-- Data access: only through `ApiClient` (`app/client.py`) → REST API.
-- Global header (`app/navigation.py`): product name, subtitle, synthetic badge, processing date, refresh cycle,
-  backend, agent mode; sidebar reviewer selector (synthetic specialist + role) and a "Refresh source" control.
+- Framework: Streamlit (Databricks Apps), `app/main.py` + `app/navigation.py`; pages in `app/pages/`, shared
+  building blocks in `app/ui.py`. All data goes through the REST API (`app/client.py`).
+- Sidebar: **Presenter notes** toggle (talk track from `config/demo_story.yml`), `lsi-pipeline` workflow status
+  with **Open run in Databricks** and **Run workflow now**, and **Sync AI results** (reloads Gold tables).
+- Purple boxes are AI output and always state where they were produced (notebook, function, endpoint).
+  Blue boxes are deterministic rule facts with rule IDs.
 
-## Visual language
+## 1. Portfolio (default page)
+- Four cards: active loans, need attention, AI summaries, reviewed by the agent.
+- AI portfolio briefing from `gold_ai_portfolio_briefing` (AI Functions, notebook 06).
+- Loan list (highest attention first): loan (click to open), priority, condition, score, **AI summary**
+  (`gold_ai_loan_insights`), **Agent review** (recommended action and tool-call count from `gold_agent_loan_reviews`).
+- Search, priority filter, and "Only loans with AI" toggle.
 
-| Element | Treatment |
-|---------|-----------|
-| Priority | CRITICAL red, HIGH orange, MEDIUM amber, LOW slate |
-| Health | Healthy green, Watch blue, Action Required amber, Critical red |
-| Timeline states | COMPLETED grey-green, CURRENT blue, UPCOMING teal, SCHEDULED slate (open follow-up beyond look-ahead), DUE amber, OVERDUE red, PROPOSED purple (dashed), SUBMITTED indigo, FAILED dark red, VERIFIED green check |
-| AI content | Labeled "Agent" and the agent mode (LLM / deterministic) |
-| Deterministic facts | Labeled "Rule" with the rule ID |
+## 2. Loan
+- Picker plus header (priority, condition, days overdue, payment and foreclosure status).
+- Left, **Rules engine facts**: conditions with rule IDs, score-driver chart, milestone, follow-up, escalation.
+- Right, **AI from the Databricks backend**: the AI Functions summary and the agent review (recommended action,
+  tools called, review text), each labelled with its source.
+- **On-demand AI analysis**: *Run AI analysis now* sends a review request to the deployed agent; a chat box sends
+  follow-up questions. Each answer shows the tool chain and the rows each Unity Catalog tool returned.
+- Servicing event timeline in an expander.
 
-## 0. Demo layer (presenter experience)
+## 3. The Agent
+- Endpoint status, model version, tool count; links to the serving endpoint, AI Playground, the model in Unity
+  Catalog, and traces.
+- How-it-works diagram, what it may and may never do, a live chat with suggested prompts, and the tool catalog
+  read live from Unity Catalog (with links to each function).
 
-Design principle: **calm by default, detail on demand.** Pages show the few things a presenter needs; filters,
-extra metrics, evidence, and tool calls live in expanders and popovers.
+## 4. How It Works
+- One diagram with Databricks at the center, last workflow run, "Where the AI is created" table, the agent in four
+  bullets, Databricks components and their role, and links to every resource.
 
-- **Navigation sections:** Demo (Demo Story, How It Works) · Operations (Home, Priority Queue, Loan 360,
-  Portfolio) · Trust (Agent Activity, Evaluation). The app opens on Demo Story.
-- **Demo Story (`app/pages/story.py`):** ten chapters (set the scene → glance → queue → investigate → agent →
-  decide → verify → failure → trust → close). Each chapter shows its goal, minutes, and talk track, and an
-  **Open** button that navigates to the right page (and loan). The target page then shows a chapter banner
-  with "Say" and "Do" notes and a **Next chapter** button.
-- **Presenter notes:** sidebar toggle (default on) showing a dashed talk-track callout on each page.
-  Content lives in `config/demo_story.yml` and can be edited without code changes.
-- **How It Works (`app/pages/how_it_works.py`):** three pillars (monitor, agent investigates, people decide),
-  an architecture diagram color-coded by automated / AI / human / System of Record, a "who does what" table for
-  every step of the loop, the agent loop diagram with what the agent may and may never do, a rules-vs-agent-vs-
-  people decision split, and the Databricks components used.
-
-## 1. Home (`app/pages/home.py`)
-
-1. **KPI cards** (`components/kpi_cards.py`): five headline cards (Active loans, Need attention, Critical,
-   Awaiting approval, Failed verification); Upcoming, Due, Overdue, Missing follow-up, Data exceptions, Approved
-   today, and Awaiting verification under "More metrics". All from `GET /api/portfolio/summary`.
-2. **Portfolio Health** (`components/portfolio_health.py`): four segment buttons (Healthy, Watch, Action
-   Required, Critical) with counts and a stacked bar. Clicking a segment filters the task preview and offers
-   "Open in Portfolio".
-3. **Today's Portfolio Briefing**: generated via `POST /api/agent {mode: briefing}` from deterministic facts
-   only; shows source (LLM / deterministic), an expander with the facts, and a regenerate button.
-4. **Prioritized task preview** (`components/priority_table.py`): top 10 — priority, loan, synthetic borrower,
-   condition, score, drivers, recommendation, specialist, status, why prioritized; "Open" goes to Loan 360.
-
-## 2. Portfolio (`app/pages/portfolio.py`)
-
-Columns: Loan, Borrower, State, Portfolio, Current Balance, Payment Status, Days Delinquent, Loan Status,
-Foreclosure Status, Current Milestone, Next Follow-Up, Milestone Health, Attention Score, Priority, Assigned
-Specialist, Agent Status. Filters: State, Portfolio, Loan Status, Payment Status, Foreclosure Status,
-Milestone, Health, Priority, Specialist, Agent Status. Search: loan ID, synthetic borrower, state, county.
-Single-row selection opens Loan 360. Row count and filtered count displayed.
-
-## 3. Priority Queue (`app/pages/priority_queue.py`)
-
-Columns: priority, loan, borrower, condition, severity, milestone, follow-up date, days overdue, score,
-drivers, recommendation, confidence, specialist, status, why prioritized. Filters: priority, every condition,
-review state (Not analyzed, Awaiting approval, Approved, Submitted, Rejected, Deferred, Escalated, Verified,
-Verification failed), specialist. Row selection → Loan 360. Bulk "Analyze top N with agent" (default 5).
-
-## 4. Loan 360 (`app/pages/loan_360.py`)
-
-**Header:** loan ID, synthetic borrower, loan status, payment status, days delinquent, foreclosure status,
-priority badge, score, days overdue. Loan picker (search) if none selected.
-
-**Tabs**
-- **Overview:** metadata, property (synthetic), balances, assigned specialist and party, statuses, current
-  milestone, effective follow-up, health, score drivers (bar), open conditions with rule IDs, escalation
-  reasons, pending actions.
-- **Timeline - proposed event panel** (`components/proposed_event.py`): when the current recommendation proposes
-  an event (for example opening the next milestone), the specialist can adjust the follow-up date, servicing
-  note, and outreach, then **Confirm and schedule** (records APPROVE, or EDIT when anything changed; revalidates;
-  optionally sends to the servicing system immediately) or **Dismiss** (records REJECT with a reason). Timeline
-  states move Proposed -> Approved (not yet sent) -> Scheduled (awaiting verification) -> Verified.
-- **Events:** chronological timeline (`components/event_timeline.py`) with state styling for completed,
-  current, upcoming, due, overdue, proposed, submitted, failed, verified; toggle to include payment history.
-- **Agent Analysis:** (`components/agent_assessment.py`) detected primary + secondary conditions, priority,
-  score, attention reasons, evidence table, rationale, recommended action, proposed event/date/note/outreach,
-  confidence, uncertainty, missing information, allowed actions, validation result. Buttons: "Run agent
-  analysis" (creates/refreshes the recommendation). **Review controls** (`components/review_controls.py`):
-  Approve, Edit (form: action from allowed list, event type, follow-up date, note, outreach, escalation
-  target), Reject (reason required), Defer (reason), Escalate (target role). After approval: outbound event
-  JSON preview, "Submit via synthetic adapter", then "Refresh source & verify".
-  **Ask the Agent:** suggested-question chips + free text; answers show tool calls in an expander.
-- **Recommendations:** history of recommendations with status, decision, action, verification.
-- **Activity:** this loan's agent/tool/user/adapter activity (`components/activity_trace.py`).
-
-## 5. Agent Activity (`app/pages/agent_activity.py`)
-
-Run selector and loan filter. For a run: step chain rendered as a horizontal flow — candidate detected →
-context retrieved → milestone checked → events retrieved → duplicates checked → rule retrieved → pending
-action checked → score calculated → allowed actions retrieved → recommendation generated → awaiting approval.
-Table: timestamp, run, loan, tool, summarized input, summarized output, duration, result, recommendation
-status. Never shows secrets, credentials, prompts, or chain-of-thought.
-
-## 6. Evaluation (`app/pages/evaluation.py`)
-
-Clearly labeled synthetic metrics in two separate sections:
-- **Deterministic rule quality** (scenario manifest): condition accuracy, priority accuracy, default-action
-  accuracy, verification accuracy; per-scenario pass/fail table.
-- **Agent quality**: action agreement with expected action, allowed-action compliance, evidence coverage,
-  tool failure rate, fallback rate, false positives / false negatives (attention flag vs expected).
-- **Human review signals** (synthetic history + live decisions): acceptance, edit, rejection, deferral rates.
-- **Verification**: success rate and status distribution.
-- Button "Run agent evaluation" (deterministic by default; LLM optional) and explanation of rule vs agent quality.
-
-## 7. States and errors
-
-- API unavailable → banner with retry; no stale writes.
-- Agent failure → "Agent analysis failed — routed to specialist review", no action buttons except Defer/Escalate.
-- Validation failure on approval → error list with codes; no action created.
-- Empty states for queues and activity.
-
-## 8. Accessibility
-
-Color is never the only signal (badges include text), tables are sortable, all controls have labels, and
-contrast meets WCAG AA in the configured theme (`.streamlit/config.toml`).
+## Retained in the backend (not shown in the simplified app)
+Review decisions, action preparation, the synthetic System-of-Record adapter, verification, and evaluation remain in
+`src/` and the REST API (with tests) and can be surfaced again if a demo needs the full human-in-the-loop flow.

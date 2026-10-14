@@ -60,17 +60,22 @@ databricks jobs run-now <job-id>
 Alternatively deploy with Databricks Asset Bundles (`databricks.yml`, also serverless):
 `databricks bundle deploy -t dev && databricks bundle run lsi_pipeline -t dev`.
 
-## 4a. Servicing monitor (recurring backend)
+## 4a. The lsi-pipeline workflow
 
-`python scripts/create_pipeline_job.py --repo-path ... --job monitor [--schedule-unpaused] [--run]` creates
-`lsi-servicing-monitor` (tasks 02 -> 03 -> 09 -> 04 -> 08 + 10). The schedule (every 30 minutes, UTC) is created
-**paused** for cost control; unpause it in the Jobs UI on demo days. Agent triage processes up to 8 loans per
-run (widget `triage_limit`) and only loans without a current AI proposal, so steady-state runs make few LLM calls.
+`python scripts/create_pipeline_job.py --repo-path ... [--run]` creates one serverless job:
+`generate -> bronze -> silver -> gold -> (tools, ai_functions) -> agent_reviews`. Notebook 06 creates
+`gold_ai_loan_insights` and `gold_ai_portfolio_briefing` with `ai_query`; notebook 07 calls the deployed agent and
+writes `gold_agent_loan_reviews`. The 30-minute schedule is created paused.
+
+**Tool functions and the agent:** the agent's credentials are scoped to the functions declared when it was
+deployed. Notebook 05 therefore creates only missing functions; if you change tool definitions, run it with
+`replace_tools=true` and then redeploy the agent (notebook 08). Notebook 07 fails loudly if the agent cannot use
+its tools.
 
 ## 4b. Deployed agent
 
 1. Register tools: `python scripts/register_uc_tools.py --warehouse-id <id>` (or notebook 05).
-2. Run `notebooks/11_deploy_agent.py` (serverless, widget `warehouse_id`): logs the ResponsesAgent, registers
+2. Run `notebooks/08_deploy_agent.py` (serverless, widget `warehouse_id`): logs the ResponsesAgent, registers
    `main.loan_servicing_intelligence.loan_servicing_agent`, deploys endpoint `loan-servicing-agent`
    (scale-to-zero, about 15-20 minutes the first time).
 3. Re-run `scripts/deploy_app.py` so the app gets CAN_QUERY on the endpoint and EXECUTE on the schema.

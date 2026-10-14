@@ -1,74 +1,37 @@
-# Client Demo Script — Loan Servicing Intelligence
+# Demo Script — Loan Servicing Intelligence on Databricks
 
-> Say it early and often: **every borrower, loan, rule, threshold, score, and metric you will see is synthetic.**
-> Duration: 20–25 minutes. Audience: business and technical stakeholders.
+> Input data is synthetic; every AI output is real (Claude on Databricks). Say it once, early.
+> Theme: **Databricks is the right backend** — governed data, rules, AI Functions, and an agent in one platform.
+> Duration: 15–20 minutes.
 
-## Before the demo (10 minutes ahead)
+## Before the demo (15 minutes ahead)
 
-1. Start the app: `databricks apps start loan-servicing-intelligence` (it is kept stopped to avoid idle cost).
-2. Open the app URL once to warm the serverless SQL warehouse (first query ~10–20 s from a cold start).
-3. In the sidebar choose reviewer **Synthetic Specialist 01 (LOAN_SERVICING_SPECIALIST)**.
-4. Click **Reset demo** in the sidebar (demo mode) so recommendations, decisions, actions, and verification
-   start clean. Processing date shows **2026-10-12**.
+1. Start the app if stopped: `databricks apps start loan-servicing-intelligence`.
+2. Wake the agent endpoint (it scales to zero): ask one question on **The Agent** page or in the AI Playground.
+3. Optional: run the `lsi-pipeline` workflow (sidebar **Run workflow now**, about 10 minutes), then **Sync AI results**.
+4. Open these tabs in Databricks: the latest `lsi-pipeline` run, notebook `06_ai_functions`, notebook
+   `07_agent_reviews`, the `loan-servicing-agent` serving endpoint, and the `lsi_*` functions in Catalog Explorer.
 
-Key loans:
+## Storyline
 
-| Loan | Use |
-|------|-----|
-| `LSI-SYN-000005` | Main path: TITLE_REVIEW 18 days overdue, HIGH, CONTACT_ATTORNEY → approve → VERIFIED |
-| `LSI-SYN-000006` | Severely overdue, CRITICAL, escalation |
-| `LSI-SYN-000004` | Configured adapter failure (FAIL) → returns to queue |
-| `LSI-SYN-000016` | Pre-existing failed verification (NOT_FOUND) |
-| `LSI-SYN-000019` | Looks urgent but already covered by a pending action (ALREADY_ACTIONED, LOW) |
-
-## Script
-
-The app opens on **Demo Story**, which contains this storyline as ten clickable chapters with talk track
-(`config/demo_story.yml`). Click **Open** on each chapter, or **Next chapter** in the banner at the top of each
-page. Turn presenter notes off in the sidebar when sharing the screen with notes hidden.
-
-1. **Open Home — portfolio-wide monitoring.** "Instead of opening loans one at a time, every active loan is
-   evaluated every cycle by deterministic, configurable rules." Point to the synthetic badge.
-2. **Portfolio metrics and AI briefing.** Walk the KPI cards and health segments; click **Critical**. Read
-   Today's Portfolio Briefing: "The agent wrote this, but only from the deterministic facts in the expander —
-   any number not in the facts is rejected automatically."
-3. **Open the prioritized task list.** Go to **Priority Queue**. Show filters and the *why prioritized* column.
-4. **Select a high-priority overdue loan.** Pick `LSI-SYN-000005`.
-5. **Loan 360 and event timeline.** Header, Overview, then **Events**: completed milestones, the current
-   TITLE_REVIEW milestone, and the overdue follow-up in red.
-6. **Deterministic condition and score.** Overview: condition OVERDUE (RULE-FOLLOWUP-003), score 54 = 30
-   (overdue) + 18 (days overdue) + 6 (severity). "The model never calculates this."
-7. **Agent evidence and recommendation.** **Agent Analysis → Run agent analysis.** Show the tool calls, the
-   evidence table, rationale, recommended CONTACT_ATTORNEY, proposed follow-up date, draft note and outreach,
-   confidence, uncertainty, missing information, and the allowed-actions list.
-8. **Ask why the loan was prioritized.** In **Ask the Agent**, click "Why is this loan prioritized?" Show the
-   answer and its tool calls.
-9. **Approve or edit.** Click **Edit**, shorten the follow-up date, adjust the note, approve. "The action is
-   revalidated — currency, duplicates, pending actions, fields, allowed actions — before anything is created."
-10. **Show the outbound event.** Expand the outbound event JSON (loan-servicing-system-compatible, synthetic).
-11. **Run the synthetic adapter.** Click **Submit via synthetic adapter** → status SUBMITTED. "This simulates
-    the System of Record; there is no browser automation and no real platform."
-12. **Refresh ingestion.** Click **Refresh source & verify** (or the sidebar control).
-13. **Verification success.** Status **VERIFIED**; the timeline shows the new event with a check; the loan
-    drops out of the attention queue.
-14. **Configured failure returns to the queue.** Open `LSI-SYN-000004`, run analysis, approve, submit
-    (adapter configured to FAIL), refresh → **FAILED** → condition VERIFICATION_FAILURE, back in the queue at
-    higher priority. Also show `LSI-SYN-000016` (NOT_FOUND from a prior cycle) and `LSI-SYN-000019` (urgent
-    looking but covered by a pending action, so LOW).
-15. **Evaluation — rule vs agent quality.** Open **Evaluation**: deterministic rule metrics are 100% against
-    the scenario manifest; agent metrics (agreement, compliance, evidence, failures) are measured separately;
-    reviewer acceptance/edit/rejection rates are signals for controlled, offline improvement only. Open
-    **Agent Activity** to show the trace chain.
-16. **Close.** "All data, rules, thresholds, and metrics are synthetic. Agents do the investigative work,
-    people stay accountable for consequential decisions, and the servicing platform remains the System of Record."
+| # | Where | Show | Say (story) | Say (Databricks) |
+|---|-------|------|-------------|------------------|
+| 1 | App - How It Works | Diagram, "Where the AI is created" | Specialists used to review loans one at a time. Here the whole portfolio is evaluated and explained before anyone logs in. | One serverless Workflow does it all: Bronze/Silver/Gold, rules, AI Functions, agent reviews. |
+| 2 | Databricks - Workflow run | Task graph: generate, bronze, silver, gold, tools, ai_functions, agent_reviews | This is the backend running. | Serverless Jobs: no clusters, nothing running between runs. |
+| 3 | Databricks - notebook 06 | The `ai_query` SQL cell and its output | The rules found the facts; one SQL function turns them into plain language. | AI Functions: `ai_query` over a governed Gold table, written back to Gold. |
+| 4 | Databricks - notebook 07 | `ask_agent`, the tool chain printed, the reviews table | The agent investigates the top of the queue overnight. | The deployed agent is one HTTP call; reviews land in Unity Catalog. |
+| 5 | App - Portfolio | AI briefing, AI summary and Agent review columns | Specialists open the app and the investigation is already done. | The app just reads Gold through a serverless SQL warehouse. |
+| 6 | App - Loan `LSI-SYN-000006` | Rule facts (left), backend AI (right) | Facts with rule IDs on the left; what the AI backend concluded on the right. | Deterministic rules plus AI, all governed. |
+| 7 | App - Loan, **Run AI analysis now** | Live tool chain and answer; ask a follow-up | Ask the agent anything about this loan, live. It recommends; people decide. | Model Serving + Unity Catalog tools + MLflow tracing. |
+| 8 | App - The Agent, then Databricks | Tool catalog; open one `lsi_*` function; serving endpoint; Playground | These 17 governed functions are the agent's toolset. | Mosaic AI Agent Framework, registered model, scale-to-zero, traces. |
+| 9 | Close | — | Agents investigate, people decide, the servicing platform stays the System of Record. | One governed platform for data, AI, and the app. |
 
 ## Fallbacks
 
-- LLM slow/unavailable: the header shows agent mode; deterministic agent produces the same structure.
-- Warehouse cold: wait for the first load; subsequent interactions are in-memory.
-- Anything odd: sidebar **Reset demo**.
+- Agent slow on first call: it is waking from scale-to-zero; continue with the backend AI and come back.
+- No AI columns in Portfolio: run the workflow, then **Sync AI results**.
 
 ## After the demo
 
-`databricks apps stop loan-servicing-intelligence` — the warehouse auto-stops after 10 minutes and the
-model endpoint is pay-per-token, so nothing else keeps running.
+`databricks apps stop loan-servicing-intelligence`. The warehouse auto-stops; the agent endpoint scales to zero;
+the workflow schedule is paused.

@@ -86,7 +86,7 @@ Format: identifier, status, date documented, context, options, decision, rationa
 - **Consequences:** Occasional fallback; zero invented numbers.
 
 ## ADR-014 — Recurring serverless "servicing monitor" workflow as the backend
-- **Status:** Accepted · **Documented:** 2026-10-11
+- **Status:** Superseded by ADR-018 · **Documented:** 2026-10-11
 - **Context:** The demo needs automation that runs in Databricks without the app: continuous re-evaluation, verification, and agent work behind the scenes.
 - **Options:** (a) app-only processing; (b) Lakeflow Declarative Pipelines; (c) a Databricks Workflow of notebook tasks reusing `src/`.
 - **Decision:** (c) `lsi-servicing-monitor`: ingest -> silver -> refresh & verify -> rules & scores (gold) -> agent triage + AI Functions (parallel). Serverless, scheduled every 30 minutes (created paused; unpause for demo days). The setup pipeline `lsi-pipeline` remains for (re)generating data.
@@ -109,6 +109,16 @@ Format: identifier, status, date documented, context, options, decision, rationa
 - **Consequences:** Two agent runtimes share prompts and rules: the deployed read-only agent (UC tools over Gold)
   and the in-app agent (Python tools over live state) used for recommendations and event drafts. Scale-to-zero
   means a cold start after idle; warm it before a demo.
+
+## ADR-018 — One readable workflow; app as a thin window on the backend
+- **Status:** Accepted · **Documented:** 2026-10-14
+- **Context:** The demo's goal is to show why Databricks is the right backend. The app had grown into a full
+  operations product and the AI steps were hidden behind function calls in notebooks.
+- **Decision:** A single `lsi-pipeline` workflow whose AI steps are readable notebooks: 06 (`ai_query` in SQL) and
+  07 (calls the deployed agent). The app is reduced to Portfolio, Loan, The Agent, and How It Works; it reads AI
+  results from Gold and calls the agent on demand. Review, adapter, and verification remain in the backend code.
+- **Consequences:** Tool functions are no longer replaced on each run (replacing invalidates the deployed agent's
+  scoped credentials); changing tools requires redeploying the agent.
 
 ## ADR-017 — Flat, one-module-per-concept code layout
 - **Status:** Accepted · **Documented:** 2026-10-14
