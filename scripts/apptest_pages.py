@@ -15,8 +15,8 @@ for page in ["story", "agent", "how_it_works", "home", "portfolio", "priority_qu
     script = f"""
 import sys; sys.path.insert(0, r"{ROOT}")
 import streamlit as st
-from app.components.styles import inject_css
-from app.navigation import build_pages, header, sidebar, PAGES
+from app.ui import inject_css
+from app.navigation import build_pages, header, PAGES, sidebar
 inject_css(); build_pages(); header(); sidebar()
 st.session_state.setdefault("selected_loan_id", "LSI-SYN-000005")
 import app.pages.{page} as p

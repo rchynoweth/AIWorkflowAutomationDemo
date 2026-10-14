@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.ingestion.bronze import SOURCE_FILES, new_batch_id
+from src.medallion import new_batch_id, SOURCE_FILES
 
 TABLE_COMMENT = "Loan Servicing Intelligence - SYNTHETIC DEMONSTRATION DATA"
 
@@ -65,7 +65,7 @@ def write_table(spark, settings, name: str, pdf: pd.DataFrame) -> int:
 
 # ---- 01 generate -------------------------------------------------------------------------
 def generate_to_volume(spark, settings) -> dict:
-    from src.data_generation.generator import generate_dataset
+    from src.synthetic_data import generate_dataset
 
     ensure_schema(spark, settings)
     dataset = generate_dataset(seed=settings.seed, processing_date=settings.processing_date,
@@ -108,9 +108,8 @@ def ingest_bronze(spark, settings, source_dir: str | None = None, batch_id: str 
 
 # ---- 03 silver ---------------------------------------------------------------------------
 def build_silver_tables(spark, settings) -> dict:
-    from src.repositories.spark_repo import SparkRepository
-    from src.services.state import OperationalState
-    from src.transformations.silver import apply_system_of_record_updates, build_silver, overlay_operational
+    from src.storage import OperationalState, SparkRepository
+    from src.medallion import apply_system_of_record_updates, build_silver, overlay_operational
 
     bronze = {t: spark.table(fq(settings, t)).toPandas().fillna("") for t in SOURCE_FILES}
     silver = build_silver(bronze, settings)
@@ -126,12 +125,12 @@ def build_silver_tables(spark, settings) -> dict:
 
 # ---- 04 gold -----------------------------------------------------------------------------
 def build_gold(spark, settings, sql_dir: str | None = None) -> dict:
-    from src.repositories.spark_repo import SparkRepository
-    from src.services.servicing_service import LoanServicingService
-    from src.transformations import gold
+    from src.storage import SparkRepository
+    from src.service import LoanServicingService
+    from src import medallion
 
     service = LoanServicingService(settings, SparkRepository(spark, settings), agent_mode="deterministic").load()
-    tables = gold.build_gold_tables(service.evaluation, list(service.ops.recommendations.values()),
+    tables = medallion.build_gold_tables(service.evaluation, list(service.ops.recommendations.values()),
                                     list(service.ops.actions.values()), service.review_status_map())
     counts = {name: write_table(spark, settings, name, frame) for name, frame in tables.items() if not frame.empty}
     if sql_dir:
@@ -153,9 +152,9 @@ def run_sql_file(spark, settings, path: Path) -> int:
 
 # ---- 06 evaluation -----------------------------------------------------------------------
 def run_evaluation(spark, settings, agent_mode: str = "deterministic", sql_dir: str | None = None) -> dict:
-    from src.evaluation.evaluator import evaluation_rows
-    from src.repositories.spark_repo import SparkRepository
-    from src.services.servicing_service import LoanServicingService
+    from src.evaluation import evaluation_rows
+    from src.storage import SparkRepository
+    from src.service import LoanServicingService
 
     service = LoanServicingService(settings, SparkRepository(spark, settings), agent_mode=agent_mode).load()
     service.run_agent_evaluation(agent_mode)
@@ -171,15 +170,15 @@ def run_evaluation(spark, settings, agent_mode: str = "deterministic", sql_dir: 
 
 # ---- 07 reset ----------------------------------------------------------------------------
 def reset_demo(spark, settings) -> None:
-    from src.repositories.spark_repo import SparkRepository
+    from src.storage import SparkRepository
 
     SparkRepository(spark, settings).reset_ops()
 
 
 # ---- servicing monitor (recurring backend workflow) ------------------------------------------
 def _service(spark, settings, agent_mode: str = "deterministic"):
-    from src.repositories.spark_repo import SparkRepository
-    from src.services.servicing_service import LoanServicingService
+    from src.storage import SparkRepository
+    from src.service import LoanServicingService
 
     return LoanServicingService(settings, SparkRepository(spark, settings), agent_mode=agent_mode).load()
 

@@ -43,7 +43,7 @@ Notebooks (Databricks source format, `notebooks/`), parameterized by widgets `ca
 |------|----------|--------|
 | generate | `01_generate_demo_data` | Creates schema + volume; writes synthetic CSVs to `/Volumes/<catalog>/<schema>/landing/<batch>` |
 | bronze | `02_ingest_bronze` | `bronze_*` with lineage columns (Spark CSV reader, all strings) |
-| silver | `03_build_silver` | `silver_*` (shared `src/transformations/silver.py`; overlays `sor_servicing_events`) |
+| silver | `03_build_silver` | `silver_*` (shared `src/medallion.py`; overlays `sor_servicing_events`) |
 | gold | `04_build_gold` | `gold_*`, baseline recommendations in `ops_recommendations`, verification results |
 | tools | `05_register_agent_tools` | UC SQL functions `lsi_*` |
 | evaluate | `06_run_evaluation` | `gold_agent_evaluation`, MLflow run |
@@ -125,7 +125,7 @@ databricks apps stop   loan-servicing-intelligence
 
 ```bash
 pip install -e ".[dev]"            # or: pip install -r requirements.txt pytest
-python -m src.data_generation.generator   # writes data/generated/*.csv
+python -m src.synthetic_data   # writes data/generated/*.csv
 pytest
 streamlit run app/main.py          # local backend, deterministic agent unless LLM reachable
 ```

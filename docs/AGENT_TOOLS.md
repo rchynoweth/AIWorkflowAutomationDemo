@@ -3,8 +3,8 @@
 > Synthetic demonstration. All tools are deterministic, read-only (except the explicitly preparatory tools,
 > which still never write to the System of Record), typed, logged, and independently testable.
 
-Implementation: `src/tools/servicing_tools.py` (functions), `src/tools/registry.py` (schemas, descriptions),
-`src/tools/executor.py` (validation, timing, logging). Each tool takes a `ToolContext` (portfolio evaluation,
+Implementation: `src/tools.py` (functions), `src/tools.py` (schemas, descriptions),
+`src/tools.py` (validation, timing, logging). Each tool takes a `ToolContext` (portfolio evaluation,
 silver dataset, operational state, config, processing date) plus typed parameters, and returns a JSON-safe dict.
 The executor wraps results as:
 

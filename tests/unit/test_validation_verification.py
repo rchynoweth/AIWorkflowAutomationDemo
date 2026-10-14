@@ -1,8 +1,7 @@
 """Proposed-event validation and action verification."""
 from datetime import date
 
-from src.rules.validation import prepare_event, validate_proposed_event
-from src.verification.verifier import verify_action
+from src.rules import prepare_event, validate_proposed_event, verify_action
 from tests.conftest import loan
 
 P = date(2026, 10, 12)

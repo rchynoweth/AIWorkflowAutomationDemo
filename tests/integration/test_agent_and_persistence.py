@@ -3,10 +3,10 @@ import json
 
 import pytest
 
-from src.agents.llm_client import ScriptedLlmClient
-from src.models.schemas import DecisionRequest
-from src.repositories.local import LocalRepository
-from src.services.servicing_service import LoanServicingService
+from src.agent import ScriptedLlmClient
+from src.models import DecisionRequest
+from src.storage import LocalRepository
+from src.service import LoanServicingService
 from tests.conftest import GENERATED
 
 pytestmark = pytest.mark.integration

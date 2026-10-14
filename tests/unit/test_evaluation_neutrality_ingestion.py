@@ -1,9 +1,9 @@
 """Evaluation metric math, customer-neutrality scan, bronze lineage."""
 import pandas as pd
 
-from src.evaluation.evaluator import reviewer_metrics, verification_metrics
-from src.ingestion.bronze import LINEAGE_COLUMNS, record_hash, to_bronze
-from src.quality.neutrality import check_generated_names, scan, scan_text
+from src.evaluation import reviewer_metrics, verification_metrics
+from src.medallion import LINEAGE_COLUMNS, record_hash, to_bronze
+from src.neutrality import check_generated_names, scan, scan_text
 
 
 def test_reviewer_metrics():
@@ -26,7 +26,7 @@ def test_repository_is_customer_neutral():
 
 def test_scanner_detects_risks(monkeypatch):
     monkeypatch.setenv("LSI_NEUTRALITY_DENYLIST", "acme lending")
-    from src.quality.neutrality import _denylist
+    from src.neutrality import _denylist
     text = "Contact jane@acme-lending.test or see https://intranet.acme.test at 123 Main Street, call 555-123-4567."
     cats = {f.category for f in scan_text("x.md", text + " Acme Lending", _denylist())}
     assert {"email", "url", "street_address", "phone", "denylist"} <= cats

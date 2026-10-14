@@ -37,7 +37,7 @@ if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 from src import pipeline  # noqa: E402
-from src.config.settings import load_settings  # noqa: E402
+from src.config import load_settings  # noqa: E402
 
 settings = load_settings()
 print(f"Repository: {REPO_ROOT}")

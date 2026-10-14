@@ -4,11 +4,9 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from app.components import activity_trace, agent_assessment, event_timeline, proposed_event, review_controls
-from app.components.agent_assessment import nice
-from app.components.styles import badge, esc
-from app.components.talk_track import active_chapter_banner, notes
-from app.state import ApiError, get_client, reviewer
+from app import ui
+from app.ui import active_chapter_banner, badge, esc, nice, notes
+from app.client import ApiError, get_client, reviewer
 
 SUGGESTED_QUESTIONS = ["Why is this loan prioritized?", "What should happen next?", "What information is missing?",
                        "What happens if I reject?"]
@@ -111,9 +109,9 @@ def render() -> None:
         _overview(detail)
     with tabs[1]:
         recs_tl = client.recommendations(loan_id)
-        proposed_event.render(next((r for r in recs_tl if r["status"] != "SUPERSEDED"), None))
+        ui.proposed_event_panel(next((r for r in recs_tl if r["status"] != "SUPERSEDED"), None))
         include = st.toggle("Include payment history", value=False, key="tl_payments")
-        event_timeline.render(client.events(loan_id, include))
+        ui.timeline(client.events(loan_id, include))
     with tabs[2]:
         recs = client.recommendations(loan_id)
         current = next((r for r in recs if r["status"] != "SUPERSEDED"), None)
@@ -128,9 +126,9 @@ def render() -> None:
                 except ApiError as exc:
                     st.session_state["flash"] = f"Agent analysis failed — routed to specialist review ({exc.detail})"
             st.rerun()
-        agent_assessment.render(current, detail["state"])
-        review_controls.render(current, detail["state"])
-        review_controls.render_actions(detail)
+        ui.agent_proposal(current, detail["state"])
+        ui.review_panel(current, detail["state"])
+        ui.approved_actions(detail)
         st.divider()
         _ask(client, loan_id)
     with tabs[3]:
@@ -146,5 +144,5 @@ def render() -> None:
             st.info("No recommendations or actions yet.")
     with tabs[4]:
         records = client.loan_activity(loan_id)
-        activity_trace.render_flow(records)
-        activity_trace.render_table(records)
+        ui.activity_flow(records)
+        ui.activity_table(records)

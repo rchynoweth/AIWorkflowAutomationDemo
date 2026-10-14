@@ -1,5 +1,5 @@
 """Escalation, attention scoring, allowed actions, prior rejection, pending state."""
-from src.scoring.attention import priority_for
+from src.rules import priority_for
 from tests.conftest import loan
 
 

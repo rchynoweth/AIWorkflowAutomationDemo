@@ -12,14 +12,12 @@ sys.path.insert(0, str(ROOT))
 os.environ["LSI_AGENT_MODE"] = "deterministic"
 os.environ["LSI_REPOSITORY_BACKEND"] = "local"
 
-from src.config.settings import load_settings  # noqa: E402
-from src.ingestion.bronze import ingest_directory  # noqa: E402
-from src.repositories.local import LocalRepository  # noqa: E402
-from src.services.portfolio_engine import evaluate_portfolio  # noqa: E402
-from src.services.servicing_service import LoanServicingService  # noqa: E402
-from src.services.state import OperationalState  # noqa: E402
-from src.tools.servicing_tools import ToolContext  # noqa: E402
-from src.transformations.silver import build_silver  # noqa: E402
+from src.config import load_settings  # noqa: E402
+from src.medallion import build_silver, ingest_directory  # noqa: E402
+from src.storage import LocalRepository, OperationalState  # noqa: E402
+from src.rules import evaluate_portfolio  # noqa: E402
+from src.service import LoanServicingService  # noqa: E402
+from src.tools import ToolContext  # noqa: E402
 
 GENERATED = ROOT / "data" / "generated"
 

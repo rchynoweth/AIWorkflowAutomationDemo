@@ -3,8 +3,7 @@ from datetime import date
 
 import pytest
 
-from src.rules.conditions import select_primary
-from src.rules.dates import calculate_followup_date, roll_to_business_day
+from src.rules import calculate_followup_date, roll_to_business_day, select_primary
 from tests.conftest import loan
 
 

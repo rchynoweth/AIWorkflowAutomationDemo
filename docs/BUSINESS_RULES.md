@@ -7,10 +7,10 @@
 Versions: rules `rules-2026.10.1`, scoring `scoring-2026.10.1`, escalation `escalation-2026.10.1`,
 actions `actions-2026.10.1`. Processing date in demo mode: **2026-10-12**.
 
-Implementation map: facts `src/rules/facts.py`, conditions `src/rules/conditions.py`, escalation
-`src/rules/escalation.py`, allowed actions `src/rules/allowed_actions.py`, follow-up dates
-`src/rules/dates.py`, validation `src/rules/validation.py`, scoring `src/scoring/attention.py`,
-verification `src/verification/verifier.py`.
+Implementation map: facts `src/rules.py`, conditions `src/rules.py`, escalation
+`src/rules.py`, allowed actions `src/rules.py`, follow-up dates
+`src/rules.py`, validation `src/rules.py`, scoring `src/rules.py`,
+verification `src/rules.py`.
 
 ## 1. Definitions
 

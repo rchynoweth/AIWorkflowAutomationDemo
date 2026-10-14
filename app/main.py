@@ -12,7 +12,7 @@ import streamlit as st  # noqa: E402
 
 st.set_page_config(page_title="Loan Servicing Intelligence", page_icon=":material/account_balance:", layout="wide")
 
-from app.components.styles import inject_css  # noqa: E402
+from app.ui import inject_css  # noqa: E402
 from app.navigation import build_pages, flash, header, sidebar  # noqa: E402
 
 inject_css()

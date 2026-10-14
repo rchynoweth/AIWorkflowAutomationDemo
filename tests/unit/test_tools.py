@@ -1,8 +1,7 @@
 """Every registered tool is typed, logged, independently runnable, and fails safely."""
 import pytest
 
-from src.tools.executor import ToolExecutor
-from src.tools.registry import ALL_TOOLS, REGISTRY
+from src.tools import ALL_TOOLS, REGISTRY, ToolExecutor
 
 LOAN = "LSI-SYN-000005"
 ARGS = {

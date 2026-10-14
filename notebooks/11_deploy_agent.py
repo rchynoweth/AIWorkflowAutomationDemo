@@ -38,7 +38,8 @@ if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 from src import pipeline  # noqa: E402
-from src.config.settings import load_settings  # noqa: E402
+from src.config import load_settings  # noqa: E402
+from src.databricks import deploy_agent
 
 settings = load_settings()
 print(f"Repository: {REPO_ROOT}")
@@ -46,7 +47,6 @@ print(f"Target: {settings.catalog}.{settings.schema} | processing date {settings
 
 # COMMAND ----------
 
-from src.agent_deploy import deploy_agent
 
 result = deploy_agent(
     agent_path=os.path.join(REPO_ROOT, "agent_endpoint", "loan_servicing_agent.py"),

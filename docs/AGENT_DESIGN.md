@@ -20,7 +20,7 @@ class LoanServicingAgent(ABC):
     def portfolio_briefing(self, facts: dict, run: RunContext) -> Briefing: ...
 ```
 
-Implementations (`src/agents`):
+Implementations (`src/agent.py`):
 
 | Class | Use |
 |-------|-----|
@@ -38,10 +38,10 @@ fallback is recorded in the trace and the recommendation's `uncertainty`.
 ## 2a. Deployed Databricks agent (Mosaic AI Agent Framework)
 
 `agent_endpoint/loan_servicing_agent.py` is an MLflow **ResponsesAgent** (models-from-code) deployed by
-`notebooks/11_deploy_agent.py` (`src/agent_deploy.py`):
+`notebooks/11_deploy_agent.py` (`src/databricks.py`):
 
 - **Model:** Claude via the Foundation Model API (`databricks-claude-sonnet-5-5`), tool calling.
-- **Tools:** the 17 Unity Catalog SQL functions `lsi_*` (`src/tools/uc_functions.py`). Tool names, descriptions,
+- **Tools:** the 17 Unity Catalog SQL functions `lsi_*` (`src/tools.py`). Tool names, descriptions,
   and parameter schemas are read from Unity Catalog at start-up; each call executes
   `SELECT * FROM <function>(...)` on the serverless SQL warehouse.
 - **Registered model:** `main.loan_servicing_intelligence.loan_servicing_agent` (Unity Catalog).
@@ -106,7 +106,7 @@ deterministic briefing is used. The UI labels which path produced the briefing.
 
 ## 7. System instruction (summary)
 
-The full text is in `src/agents/prompts.py`. It instructs the agent to:
+The full text is in `src/agent.py`. It instructs the agent to:
 
 - support authorized loan-servicing specialists; it is not the decision-maker;
 - obtain every fact from tools and never invent loans, dates, amounts, statuses, metrics, or scores;
@@ -156,7 +156,7 @@ the UI ("Agent analysis failed — route to specialist review"), activity record
 
 Each run has a `run_id`. Every step and tool call is persisted to `ops_agent_activity` with summarized inputs
 and outputs, duration, success, and error. If `mlflow` is importable, runs are wrapped in MLflow traces
-(`src/services/tracing.py`). Prompts, credentials, and model reasoning are never stored.
+(`src/service.py`). Prompts, credentials, and model reasoning are never stored.
 
 ## 12. Improvement process
 

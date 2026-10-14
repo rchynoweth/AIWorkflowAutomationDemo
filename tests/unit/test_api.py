@@ -2,15 +2,15 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from src.api import container
-from src.api.main import app
+from src import api
+from src.api import app
 
 
 @pytest.fixture()
 def client(service):
-    container.set_service(service)
+    api.set_service(service)
     yield TestClient(app)
-    container.set_service(None)
+    api.set_service(None)
 
 
 def test_health_and_summary(client):

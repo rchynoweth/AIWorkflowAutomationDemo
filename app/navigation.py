@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import streamlit as st
 
-from app.components.styles import esc
-from app.state import ApiError, get_client
-from src.config.settings import get_settings
+from app.ui import esc
+from app.client import ApiError, get_client
+from src.config import get_settings
 
 PAGES: dict = {}
 
@@ -17,8 +17,7 @@ REVIEWERS = [
 
 
 def build_pages() -> dict:
-    from app.pages import (agent, agent_activity, evaluation, home, how_it_works, loan_360, portfolio,
-                           priority_queue, story)
+    from app.pages import agent, agent_activity, evaluation, home, how_it_works, loan_360, portfolio, priority_queue, story
 
     PAGES.update({
         "story": st.Page(story.render, title="Demo Story", icon=":material/movie:", url_path="story", default=True),

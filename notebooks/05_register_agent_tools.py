@@ -35,7 +35,8 @@ if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 from src import pipeline  # noqa: E402
-from src.config.settings import load_settings  # noqa: E402
+from src.config import load_settings  # noqa: E402
+from src.tools import uc_function_statements
 
 settings = load_settings()
 print(f"Repository: {REPO_ROOT}")
@@ -43,7 +44,6 @@ print(f"Target: {settings.catalog}.{settings.schema} | processing date {settings
 
 # COMMAND ----------
 
-from src.tools.uc_functions import uc_function_statements
 
 for name, statement in uc_function_statements(settings.catalog, settings.schema):
     spark.sql(statement)

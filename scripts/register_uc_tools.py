@@ -10,9 +10,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from src.config.settings import load_settings  # noqa: E402
-from src.repositories.databricks_sql import DatabricksSqlRepository  # noqa: E402
-from src.tools.uc_functions import uc_function_statements  # noqa: E402
+from src.config import load_settings  # noqa: E402
+from src.storage import DatabricksSqlRepository  # noqa: E402
+from src.tools import uc_function_statements  # noqa: E402
 
 SAMPLE_ARGS = {"lsi_get_milestone_rule": "'TITLE_REVIEW'", "lsi_priority_queue": "5",
                "lsi_portfolio_health_summary": "", "lsi_specialist_workload": "", "lsi_get_failed_verifications": ""}

@@ -5,11 +5,11 @@ from datetime import date
 
 import pytest
 
-from src.config.settings import load_settings
-from src.data_generation.generator import generate_dataset, write_dataset
-from src.models.schemas import DecisionEdits, DecisionRequest
-from src.repositories.local import LocalRepository
-from src.services.servicing_service import LoanServicingService
+from src.config import load_settings
+from src.synthetic_data import generate_dataset, write_dataset
+from src.models import DecisionEdits, DecisionRequest
+from src.storage import LocalRepository
+from src.service import LoanServicingService
 
 pytestmark = pytest.mark.end_to_end
 

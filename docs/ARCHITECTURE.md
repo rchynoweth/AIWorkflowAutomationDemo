@@ -5,49 +5,52 @@
 ## 1. Logical architecture
 
 ```text
-Synthetic loan-servicing export files (src/data_generation)
+Synthetic loan-servicing export files (src/synthetic_data.py)
         -> Databricks landing volume  (/Volumes/<catalog>/<schema>/landing)   | local: data/landing
-        -> file ingestion             (src/ingestion/bronze.py, notebooks/02)
+        -> file ingestion             (src/medallion.py, notebooks/02)
         -> Bronze Delta tables        (bronze_*: raw strings + lineage columns)
-        -> validation/standardization (src/transformations/silver.py, notebooks/03)
+        -> validation/standardization (src/medallion.py, notebooks/03)
         -> Silver Delta tables        (silver_*: typed, deduplicated, sequenced, DQ-flagged)
         -> business rules & portfolio calculations (src/rules, src/scoring, src/verification,
-                                        src/services/portfolio_engine.py, notebooks/04)
+                                        src/rules.py, notebooks/04)
         -> Gold Delta tables/views    (gold_*)
         -> deterministic servicing tools (src/tools; UC SQL functions via notebooks/05)
-        -> Loan Servicing Agent       (src/agents: tool-calling LLM agent + deterministic agent)
-        -> agent REST API             (src/api: FastAPI)
+        -> Loan Servicing Agent       (src/agent.py: tool-calling LLM agent + deterministic agent)
+        -> agent REST API             (src/api.py: FastAPI)
         -> Databricks App             (app/: Streamlit, calls the API only)
-        -> human review & authorization (src/services/review_service.py)
-        -> SyntheticServicingSystemAdapter (src/adapters)
+        -> human review & authorization (src/service.py)
+        -> SyntheticServicingSystemAdapter (src/service.py)
         -> outbound servicing event   (ops_actions.outbound_payload; data/outbound/*.json locally)
         -> simulated System of Record (sor_servicing_events)
-        -> next source refresh        (src/services/refresh_service.py, notebooks/03)
-        -> action verification        (src/verification/verifier.py)
+        -> next source refresh        (src/service.py, notebooks/03)
+        -> action verification        (src/rules.py)
         -> verified result or returned exception (VERIFICATION_FAILURE back in the queue)
 ```
 
-## 2. Layered component view
+## 2. Code layout (one module per concept)
 
-| Layer | Package | Responsibility |
-|-------|---------|----------------|
-| Configuration | `src/config` | Load YAML config with environment overrides; expose typed accessors |
-| Models | `src/models` | Pydantic schemas: recommendations, evidence, decisions, actions, verification, tool calls, API payloads |
-| Data generation | `src/data_generation` | Deterministic synthetic CSVs + scenario manifest |
-| Ingestion | `src/ingestion` | Bronze construction (pandas locally; Spark in notebooks) with lineage columns |
-| Transformations | `src/transformations` | Silver standardization/DQ; System-of-Record overlay; Gold table assembly |
-| Rules | `src/rules` | Loan facts, conditions, escalation, allowed actions, validation, follow-up dates |
-| Scoring | `src/scoring` | Attention score, priority, drivers |
-| Verification | `src/verification` | Match approved actions to refreshed events; statuses and differences |
-| Repositories | `src/repositories` | `ServicingRepository` interface; `LocalRepository`, `DatabricksSqlRepository` |
-| Tools | `src/tools` | 29 typed tools + registry + executor with logging |
-| Agents | `src/agents` | `LoanServicingAgent` interface, LLM client adapters, tool-calling agent, deterministic agent, recommendation builder, prompts |
-| Services | `src/services` | Portfolio engine, servicing facade, review, action, refresh, briefing, activity/tracing |
-| Adapters | `src/adapters` | `LoanServicingSystemAdapter` interface; `SyntheticServicingSystemAdapter` |
-| Evaluation | `src/evaluation` | Rule and agent evaluation against the scenario manifest |
-| Quality | `src/quality` | Customer-neutrality scanner |
-| API | `src/api` | FastAPI app exposing the service facade |
-| UI | `app/` | Streamlit pages/components; HTTP client to the API |
+The code is deliberately flat so a reader can follow a whole concept in one file.
+
+| Module | What lives there |
+|--------|------------------|
+| `src/config.py` | YAML config loading with environment overrides |
+| `src/synthetic_data.py` | Deterministic synthetic exports and the scenario manifest |
+| `src/medallion.py` | Bronze (raw + lineage), Silver (typed, validated), Gold table assembly |
+| `src/rules.py` | **The whole rules engine**: loan facts, conditions, escalation, scoring, allowed actions, follow-up dates, validation, verification, portfolio evaluation |
+| `src/tools.py` | 29 agent tools, registry, executor; Unity Catalog SQL tool functions |
+| `src/agent.py` | Prompts, LLM client, deterministic and tool-calling agents, recommendation guardrails, briefing |
+| `src/service.py` | `LoanServicingService` facade: analysis, review, actions, synthetic adapter, refresh, activity |
+| `src/storage.py` | Operational state and storage backends (local files, Databricks SQL, Spark) |
+| `src/evaluation.py` | Rule / agent / reviewer / verification metrics |
+| `src/databricks.py` | Workflow status, resource links, deployed-agent client, agent deployment |
+| `src/pipeline.py` | Steps called by the Databricks notebooks |
+| `src/api.py`, `src/models.py` | REST API and request schemas |
+| `src/neutrality.py` | Customer-neutrality scanner |
+| `agent_endpoint/loan_servicing_agent.py` | The deployable Databricks agent (self-contained) |
+| `app/main.py`, `app/navigation.py` | Streamlit entry point, navigation, header, sidebar |
+| `app/client.py` | REST client and in-process API server bootstrap |
+| `app/ui.py` | Shared UI building blocks (loan lists, timeline, agent proposal, review panel, talk track) |
+| `app/pages/*.py` | One file per page |
 
 ## 3. Physical architecture on Azure Databricks
 
@@ -94,7 +97,7 @@ The app shows run status, can start a run (job resource with CAN_MANAGE_RUN), an
 ## 4. Runtime topology of the app
 
 The App container runs one Streamlit process. On first load, Streamlit starts the FastAPI app (uvicorn) on a
-daemon thread bound to `127.0.0.1:${LSI_API_PORT}`. Pages call the API with `httpx` through `app/state.py`'s
+daemon thread bound to `127.0.0.1:${LSI_API_PORT}`. Pages call the API with `httpx` through `app/client.py`'s
 `ApiClient`. Both share one `LoanServicingService` singleton, so the API boundary is real (serialization,
 validation, status codes) while state stays consistent. If the server cannot bind, the client falls back to an
 in-process ASGI transport against the same FastAPI app — the UI still goes through the API contract.

@@ -3,9 +3,8 @@ from datetime import date
 
 import pytest
 
-from src.adapters.servicing_system import SyntheticServicingSystemAdapter
-from src.models.schemas import DecisionEdits, DecisionRequest, Recommendation
-from src.services.servicing_service import InvalidState, ValidationFailed
+from src.service import InvalidState, SyntheticServicingSystemAdapter, ValidationFailed
+from src.models import DecisionEdits, DecisionRequest, Recommendation
 
 OUTBOUND = {"loan_id": "LSI-SYN-000005", "event_type": "CONTACT", "milestone_type": "TITLE_REVIEW",
             "event_date": "2026-10-12", "followup_date": "2026-10-19", "event_note": "n"}

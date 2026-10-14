@@ -4,8 +4,8 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from app.components.talk_track import active_chapter_banner, notes
-from app.state import ApiError, get_client
+from app.ui import active_chapter_banner, notes
+from app.client import ApiError, get_client
 
 AUTO, AI, HUMAN, SOR = "#DCE8F7", "#EBE4FB", "#FDE9D7", "#EAECF0"
 

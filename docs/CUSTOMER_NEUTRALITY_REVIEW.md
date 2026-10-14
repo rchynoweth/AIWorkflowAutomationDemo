@@ -8,8 +8,8 @@
 
 ## Method
 
-Automated scanner `src/quality/neutrality.py`, run by `tests/unit/test_customer_neutrality.py` and
-`python -m src.quality.neutrality`. It recursively scans file **names, directory names, and contents** of all
+Automated scanner `src/neutrality.py`, run by `tests/unit/test_customer_neutrality.py` and
+`python -m src.neutrality`. It recursively scans file **names, directory names, and contents** of all
 text files in the repository (excluding `.git`, virtual environments, caches, and the license file).
 
 ### Locations searched
@@ -26,7 +26,7 @@ outbound files present under `data/` at scan time.
 | Email addresses | Any email not at `example.com`/`example.org` or `noreply@anthropic.com` (commit attribution) |
 | Real person / property / account data | Phone-number, SSN-like, and street-address patterns; generated names must match the `Synthetic …` pattern |
 | Customer documents / presentations / supplied files | File-type check: no `.pptx`, `.docx`, `.pdf`, `.xlsx`, `.msg`, `.eml` in the repository |
-| Claims of actual production policy/schema | Phrases asserting that content is a real organization's production schema, servicing policy, or borrower data (pattern list in `src/quality/neutrality.py`) |
+| Claims of actual production policy/schema | Phrases asserting that content is a real organization's production schema, servicing policy, or borrower data (pattern list in `src/neutrality.py`) |
 | Synthetic labeling | Generated CSVs contain `synthetic_data = true` (except the manifest); UI shows the synthetic label |
 
 ## Results

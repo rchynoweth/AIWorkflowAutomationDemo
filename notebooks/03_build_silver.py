@@ -4,7 +4,7 @@
 # MAGIC
 # MAGIC > **Synthetic demonstration data.** All loans, borrowers, rules, thresholds, and metrics are synthetic.
 # MAGIC
-# MAGIC Typing, validation, deduplication, normalization, joins, event ordering, milestone sequencing, active filtering, and data-quality flags via the shared `src/transformations/silver.py`. Applies simulated System-of-Record events (`sor_servicing_events`) visible at the current refresh cycle.
+# MAGIC Typing, validation, deduplication, normalization, joins, event ordering, milestone sequencing, active filtering, and data-quality flags via the shared `src/medallion.py`. Applies simulated System-of-Record events (`sor_servicing_events`) visible at the current refresh cycle.
 # MAGIC
 # MAGIC Runs on **serverless** compute. Core logic lives in `src/`; this notebook only orchestrates.
 
@@ -35,7 +35,7 @@ if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 from src import pipeline  # noqa: E402
-from src.config.settings import load_settings  # noqa: E402
+from src.config import load_settings  # noqa: E402
 
 settings = load_settings()
 print(f"Repository: {REPO_ROOT}")

@@ -4,9 +4,9 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from app.components import activity_trace
-from app.components.talk_track import active_chapter_banner, notes
-from app.state import get_client
+from app import ui
+from app.ui import active_chapter_banner, notes
+from app.client import get_client
 
 
 def render() -> None:
@@ -37,7 +37,7 @@ def render() -> None:
     if run != "All":
         run_df = df[df["run_id"] == run]
         st.markdown(f"#### Run {run}")
-        activity_trace.render_flow(run_df.to_dict("records"))
+        ui.activity_flow(run_df.to_dict("records"))
         loan_ids = run_df["loan_id"].dropna().unique()
         if len(loan_ids):
             recs = client.recommendations(loan_ids[0])
@@ -51,4 +51,4 @@ def render() -> None:
                                            failures=("success", lambda s: int((~s.astype(bool)).sum())))
                    .reset_index())
         st.dataframe(summary, hide_index=True)
-    activity_trace.render_table(df.to_dict("records"), height=560)
+    ui.activity_table(df.to_dict("records"), height=560)

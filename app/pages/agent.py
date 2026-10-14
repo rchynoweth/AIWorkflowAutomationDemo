@@ -6,9 +6,8 @@ import json
 import pandas as pd
 import streamlit as st
 
-from app.components.styles import badge, esc
-from app.components.talk_track import active_chapter_banner, notes
-from app.state import ApiError, get_client
+from app.ui import active_chapter_banner, badge, esc, notes
+from app.client import ApiError, get_client
 
 PROMPTS = [
     "Why is loan LSI-SYN-000005 prioritized, and what should happen next?",
@@ -155,7 +154,7 @@ def render() -> None:
     _chat(client, dep)
     _tools(dep)
     with st.expander("Also inside the app: the full 29-tool toolset used for live recommendations"):
-        from src.tools.registry import REGISTRY
+        from src.tools import REGISTRY
         st.caption("Loan 360 and the backend triage use this Python toolset (same rules engine) to build "
                    "recommendations, validation, and outbound event drafts.")
         st.dataframe(pd.DataFrame([{"tool": s.name, "description": s.description} for s in REGISTRY.values()]),

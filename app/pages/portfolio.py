@@ -4,9 +4,9 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from app.components import priority_table
-from app.components.talk_track import active_chapter_banner, notes
-from app.state import get_client
+from app import ui
+from app.ui import active_chapter_banner, notes
+from app.client import get_client
 
 FILTERS = [
     ("health", "health_segment", "Health"), ("priority", "priority", "Priority"),
@@ -36,7 +36,7 @@ def render() -> None:
     rows.sort(key=lambda r: (-int(r["attention_score"] or 0), r["loan_id"]))
     st.caption(f"{len(rows):,} of {len(df_all):,} synthetic loans, highest attention first - click a loan ID to "
                "open it")
-    priority_table.render(rows, key="portfolio_list", page_size=15, columns=priority_table.PORTFOLIO)
+    ui.loan_list(rows, key="portfolio_list", page_size=15, columns=ui.PORTFOLIO)
     with st.expander("Download view"):
         st.download_button("Download CSV (synthetic)", pd.DataFrame(rows).to_csv(index=False),
                            file_name="synthetic_portfolio.csv", mime="text/csv")

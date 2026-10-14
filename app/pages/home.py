@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import streamlit as st
 
-from app.components import kpi_cards, portfolio_health, priority_table
-from app.components.talk_track import active_chapter_banner, notes
-from app.state import ApiError, get_client
+from app import ui
+from app.ui import active_chapter_banner, notes
+from app.client import ApiError, get_client
 
 
 def _briefing(client) -> None:
@@ -36,9 +36,9 @@ def render() -> None:
     summary = client.summary()
     st.markdown("## Portfolio at a glance")
     notes("home")
-    kpi_cards.render(summary)
+    ui.kpi_cards(summary)
     st.write("")
-    segment = portfolio_health.render(summary)
+    segment = ui.health_segments(summary)
     st.markdown("#### Top tasks today" + (f" - {segment}" if segment else ""))
     if segment == "Healthy":
         st.info("Healthy loans need no action today.")
@@ -47,7 +47,7 @@ def render() -> None:
         if segment:
             in_segment = {r["loan_id"] for r in client.loans(health=segment)}
             rows = [r for r in rows if r["loan_id"] in in_segment]
-        priority_table.render(rows, key="home_queue", page_size=8)
+        ui.loan_list(rows, key="home_queue", page_size=8)
         st.caption(f"{len(rows)} loans need attention - click a loan ID to open it")
     st.divider()
     _briefing(client)

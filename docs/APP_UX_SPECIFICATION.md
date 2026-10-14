@@ -6,7 +6,7 @@
 - Framework: Streamlit (Databricks Apps compatible), `app/main.py` with `st.navigation`.
 - Title: **Loan Servicing Intelligence** — subtitle **Agent-powered portfolio monitoring and loan-servicing
   workflow automation**.
-- Data access: only through `ApiClient` (`app/state.py`) → REST API.
+- Data access: only through `ApiClient` (`app/client.py`) → REST API.
 - Global header (`app/navigation.py`): product name, subtitle, synthetic badge, processing date, refresh cycle,
   backend, agent mode; sidebar reviewer selector (synthetic specialist + role) and a "Refresh source" control.
 

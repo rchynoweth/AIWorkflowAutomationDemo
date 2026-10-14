@@ -2,9 +2,7 @@ from datetime import date
 
 import pandas as pd
 
-from src.data_generation.generator import (
-    ACTION_COLUMNS, DECISION_COLUMNS, EVENT_COLUMNS, LOAN_COLUMNS, MANIFEST_COLUMNS, generate_dataset,
-)
+from src.synthetic_data import ACTION_COLUMNS, DECISION_COLUMNS, EVENT_COLUMNS, generate_dataset, LOAN_COLUMNS, MANIFEST_COLUMNS
 
 
 def test_generation_is_deterministic():

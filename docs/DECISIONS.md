@@ -110,8 +110,17 @@ Format: identifier, status, date documented, context, options, decision, rationa
   and the in-app agent (Python tools over live state) used for recommendations and event drafts. Scale-to-zero
   means a cold start after idle; warm it before a demo.
 
+## ADR-017 — Flat, one-module-per-concept code layout
+- **Status:** Accepted · **Documented:** 2026-10-14
+- **Context:** 15 sub-packages with ~45 small files made the code hard to follow in a demo; one flow (for example
+  how a loan gets its score) spanned many files.
+- **Decision:** Consolidate into flat modules by concept (`rules.py`, `agent.py`, `tools.py`, `service.py`, ...) and a
+  single `app/ui.py` for shared UI components. Behavior unchanged; tests unchanged apart from import paths.
+- **Consequences:** Larger files (up to ~1,000 lines) with section headers; far less navigation. ADR-002 still holds:
+  logic lives in `src/`, notebooks orchestrate.
+
 ## ADR-013 — Customer-neutrality scanner with external denylist
 - **Status:** Accepted · **Documented:** 2026-10-10
 - **Context:** The repository must be provably customer-neutral without embedding the terms it guards against.
-- **Decision:** `src/quality/neutrality.py` scans for generic risk patterns (emails, non-allowlisted URLs/hosts, phone/SSN-like patterns, street addresses, production-claim phrases) plus an optional denylist supplied via `LSI_NEUTRALITY_DENYLIST` (env/file outside the repo).
+- **Decision:** `src/neutrality.py` scans for generic risk patterns (emails, non-allowlisted URLs/hosts, phone/SSN-like patterns, street addresses, production-claim phrases) plus an optional denylist supplied via `LSI_NEUTRALITY_DENYLIST` (env/file outside the repo).
 - **Consequences:** Generic checks always run in tests; organization-specific terms can be checked privately.

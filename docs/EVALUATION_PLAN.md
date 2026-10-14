@@ -21,12 +21,12 @@
 
 ## 3. Metrics
 
-### Rule metrics (`src/evaluation/rule_evaluation.py`)
+### Rule metrics (`src/evaluation.py`)
 - `condition_accuracy` = matches(primary_condition) / scenarios
 - `priority_accuracy`, `default_action_accuracy`, `verification_accuracy` (NOT_APPLICABLE ⇔ no action awaiting/after verification)
 - Per-scenario pass/fail with expected vs actual.
 
-### Agent metrics (`src/evaluation/agent_evaluation.py`)
+### Agent metrics (`src/evaluation.py`)
 - `action_agreement` = recommended_action == expected_action
 - `allowed_action_compliance` = recommended_action ∈ allowed_actions (must be 100%)
 - `evidence_coverage` = recommendations with ≥ 3 evidence items / total
@@ -37,7 +37,7 @@
 - `false_negative_rate` = recommended NO_ACTION where expected an action
 - `mean_tool_calls`, `mean_latency_ms`
 
-### Reviewer metrics (`src/evaluation/review_metrics.py`)
+### Reviewer metrics (`src/evaluation.py`)
 `acceptance_rate` (APPROVE), `edit_rate`, `rejection_rate`, `deferral_rate`, `escalation_rate`, over
 synthetic history and live decisions separately and combined.
 

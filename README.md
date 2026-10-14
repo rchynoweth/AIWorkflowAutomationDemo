@@ -53,16 +53,16 @@ stopped when idle. Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 ## Repository structure
 
 ```text
-app/                 Streamlit Databricks App (pages, components, API client)
-config/              application, business rules, scoring, escalation, allowed actions, demo scenarios
+src/                 flat core modules: config, synthetic_data, medallion, rules (the whole rules engine),
+                     tools, agent, service, storage, evaluation, databricks, pipeline, api, models, neutrality
+agent_endpoint/      the deployable Databricks agent (MLflow ResponsesAgent, Unity Catalog tools)
+app/                 Streamlit Databricks App: main, navigation, client, ui, pages/ (one file per page)
+config/              application, business rules, scoring, escalation, allowed actions, demo scenarios, talk track
 data/generated/      synthetic CSV exports (committed, reproducible)
-data/landing|outbound|processed/   runtime folders (git-ignored)
 docs/                product, architecture, data, rules, agent, API, UX, evaluation, demo, deployment docs
-notebooks/           01–07 Databricks notebooks (thin orchestration of src/)
-scripts/             job creation and app deployment helpers
+notebooks/           01-11 Databricks notebooks (thin orchestration of src/)
+scripts/             job creation, app and agent deployment, UC tool registration
 sql/                 Bronze/Silver/Gold DDL and views
-src/                 core package: data_generation, ingestion, transformations, rules, scoring, tools,
-                     agents, services, adapters, verification, evaluation, repositories, models, api, quality
 tests/               unit, integration, end_to_end
 app.yaml             Databricks App definition
 databricks.yml       Databricks Asset Bundle (serverless job + app)
@@ -73,7 +73,7 @@ databricks.yml       Databricks Asset Bundle (serverless job + app)
 ```bash
 python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt pytest
-python -m src.data_generation.generator                # regenerate data/generated (deterministic)
+python -m src.synthetic_data                # regenerate data/generated (deterministic)
 pytest                                                 # unit + integration + end-to-end
 streamlit run app/main.py                              # local backend
 ```
@@ -106,7 +106,7 @@ presenter talk track) and **How It Works** (architecture, agent, automated vs hu
 pytest tests/unit          # rules, scoring, dates, tools, agents, adapter, verification, API, neutrality
 pytest tests/integration   # pipeline, scenario manifest, tool/agent interaction, persistence
 pytest tests/end_to_end    # files -> ingestion -> rules -> score -> agent -> approval -> adapter -> refresh -> verification
-python -m src.quality.neutrality   # customer-neutrality scan
+python -m src.neutrality   # customer-neutrality scan
 ```
 
 ## Limitations

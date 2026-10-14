@@ -4,10 +4,9 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from app.components import priority_table
-from app.components.priority_table import STATUS_LABEL, nice
-from app.components.talk_track import active_chapter_banner, notes
-from app.state import ApiError, get_client, reviewer
+from app import ui
+from app.ui import active_chapter_banner, nice, notes, STATUS_LABEL
+from app.client import ApiError, get_client, reviewer
 
 CONDITIONS = ["VERIFICATION_FAILURE", "DATA_EXCEPTION", "ALREADY_ACTIONED", "DUPLICATE_RISK", "OVERDUE",
               "MISSING_FOLLOWUP", "DUE", "COMPLETED_NEEDS_NEXT", "PENDING_REVIEW", "PENDING_ACTION", "UPCOMING",
@@ -67,4 +66,4 @@ def render() -> None:
                         review_status=",".join(review) or None, limit=2000)
     _batch(client, rows)
     st.caption(f"{len(rows):,} loans need attention, ranked by priority and score - click a loan ID to open it")
-    priority_table.render(rows, key="queue_list", page_size=15)
+    ui.loan_list(rows, key="queue_list", page_size=15)

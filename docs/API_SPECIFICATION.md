@@ -2,7 +2,7 @@
 
 > Synthetic demonstration. All example values are synthetic.
 
-- Implementation: FastAPI, `src/api/main.py`; service facade `src/services/servicing_service.py`.
+- Implementation: FastAPI, `src/api.py`; service facade `src/service.py`.
 - Base URL (in the App container): `http://127.0.0.1:8001` (env `LSI_API_PORT`). Standalone:
   `uvicorn src.api.main:app --port 8001`. Interactive docs at `/docs`.
 - Content type: `application/json`. Dates `YYYY-MM-DD`; timestamps ISO-8601 UTC.

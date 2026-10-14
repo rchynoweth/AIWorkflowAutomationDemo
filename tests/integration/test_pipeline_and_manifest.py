@@ -2,9 +2,8 @@
 import pandas as pd
 import pytest
 
-from src.evaluation.evaluator import evaluate_rules, load_manifest
-from src.transformations.gold import build_gold_tables
-from src.transformations.silver import apply_system_of_record_updates, overlay_operational
+from src.evaluation import evaluate_rules, load_manifest
+from src.medallion import apply_system_of_record_updates, build_gold_tables, overlay_operational
 
 pytestmark = pytest.mark.integration
 
