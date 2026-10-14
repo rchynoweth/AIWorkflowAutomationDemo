@@ -297,7 +297,7 @@ spark.sql(f"USE {dbutils.widgets.get('catalog')}.{dbutils.widgets.get('schema')}
 # MAGIC ),
 # MAGIC scored AS (
 # MAGIC   SELECT *,
-# MAGIC          greatest(0, least(100, aggregate(score_drivers, 0, (total, d) -> total + d.points))) AS attention_score
+# MAGIC          CAST(greatest(0, least(100, aggregate(score_drivers, 0L, (total, d) -> total + d.points))) AS INT) AS attention_score
 # MAGIC   FROM drivers
 # MAGIC ),
 # MAGIC prioritized AS (
