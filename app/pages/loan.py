@@ -6,8 +6,8 @@ import streamlit as st
 
 from app import data, ui
 
-NEWS_EXAMPLE = ("Attorney update: title search delayed by a county records backlog; results expected in about two "
-                "weeks.")
+NEWS_EXAMPLE = ("Attorney update: the court is backlogged and the hearing will be rescheduled; expect a new date "
+                "in about two weeks.")
 
 
 def rule_facts(state: dict, ai: dict) -> None:

@@ -31,7 +31,7 @@
 | # | Page | Show | Say |
 |---|------|------|-----|
 | 10 | Portfolio | Briefing, AI summary and Agent draft columns | The overnight side: the queue arrives with next steps already drafted. |
-| 11 | Loan `LSI-SYN-000005` | Rule facts with rule IDs, the overnight draft | Title Review 18 days overdue; the agent already drafted the follow-up. |
+| 11 | Loan `LSI-SYN-000006` | Rule facts with rule IDs, the overnight draft | Judgment Hearing follow-up 75 days overdue; the agent already drafted the next step overnight. |
 | 12 | Loan - paste the attorney update (placeholder text), click **Re-plan with the agent** | Live tool chain, new draft | The on-demand side: something changed, and the same agent re-plans live, inside the workflow. |
 | 13 | Loan - optional custom instruction "Draft an email to the assigned attorney" | Outreach in the draft | Steer the agent per request without redeploying. |
 | 14 | Loan - edit the date, **Confirm and schedule** | Toast, timeline shows Scheduled | A person decides. The action leaves as a bulk-upload file in the `outbound` volume - no browser automation - and the next workflow run verifies it landed. |
