@@ -871,6 +871,50 @@ class LoanServicingService:
             self._reevaluate()
             return self.get_action(action_id)
 
+    # ---- next step: propose, confirm, schedule (human in the loop) ---------------------------
+    def next_step(self, loan_id: str, action_type: str | None = None) -> dict:
+        """Preview of the next servicing step: allowed actions and the event a chosen action would create."""
+        from src import tools as t
+
+        with self.lock:
+            lid = self._require_loan(loan_id)
+            ctx = self.tool_ctx
+            state = self.evaluation.results[lid]
+            allowed = state["allowed_actions"]
+            action = (action_type or "").upper()
+            if action not in allowed:
+                action = state["default_action"]
+            draft = t.prepare_followup_event(ctx, lid, action)
+            pending = t.check_pending_action(ctx, lid)["pending_actions"]
+            return {"loan_id": lid, "action_type": action, "allowed_actions": allowed, "event": draft,
+                    "pending_actions": pending, "default_action": state["default_action"]}
+
+    def schedule_next_step(self, loan_id: str, action_type: str, followup_date: str | None = None,
+                           note: str | None = None, outreach: str | None = None, reviewer_id: str = "SPEC-01",
+                           reviewer_role: str = "LOAN_SERVICING_SPECIALIST", source: str = "loan view",
+                           send: bool = True) -> dict:
+        """A specialist confirms a proposed step: record the decision, re-validate, create the event, and (optionally)
+        send it to the servicing system. Returns the decision and the action."""
+        from src.models import DecisionEdits, DecisionRequest
+
+        lid = self._require_loan(loan_id)
+        proposal = self.analyze_loan(lid, user_id=reviewer_id, agent_mode="deterministic")["recommendation"]
+        if proposal is None:
+            raise InvalidState("Could not prepare a proposal for this loan")
+        edits = DecisionEdits(action_type=action_type if action_type != proposal["recommended_action"] else None,
+                              followup_date=followup_date, note=note, outreach=outreach)
+        changed = bool(edits.action_type) or any(
+            v is not None and v != proposal.get(k) for k, v in (("recommended_followup_date", followup_date),
+                                                               ("suggested_note", note),
+                                                               ("suggested_outreach", outreach)))
+        result = self.decide(proposal["recommendation_id"], DecisionRequest(
+            decision="EDIT" if changed else "APPROVE", reviewer_id=reviewer_id, reviewer_role=reviewer_role,
+            reason=f"Confirmed in the {source}", edits=edits if changed else None))
+        action = result.get("action")
+        if action and send:
+            action = self.submit_action(action["action_id"])
+        return {"decision": result["decision"], "action": action}
+
     def refresh(self) -> dict:
         with self.lock:
             cycle = self.ops.refresh_cycle + 1

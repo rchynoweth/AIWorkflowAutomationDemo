@@ -1,6 +1,8 @@
 """Loan: rule facts, AI created by the Databricks backend, and on-demand analysis by the deployed agent."""
 from __future__ import annotations
 
+from datetime import date
+
 import pandas as pd
 import streamlit as st
 
@@ -49,14 +51,88 @@ def _backend_ai(loan_id: str, ai: dict) -> None:
                 "Use the on-demand analysis below.")
         return
     if insight:
-        ui.ai_box(insight["ai_summary"], f"AI Functions: ai_query ({insight.get('model_endpoint')}) in notebook 07, "
-                                         f"{insight.get('generated_at')} UTC")
-        st.write("")
+        ui.ai_box(insight["ai_summary"], f"AI Functions (ai_query, {insight.get('model_endpoint')}) in notebook 07",
+                  key=f"insight_{loan_id}")
     if review:
         action = ui.nice(review.get("recommended_action")) or "See review"
-        ui.ai_box(f"Recommended action: {action}\n\n{review['review']}",
-                  f"Loan Servicing Agent ({review.get('agent_endpoint')}) in notebook 08 - "
-                  f"{review.get('tool_call_count')} tool calls: {review.get('tools_called')}")
+        body = ui.strip_recommended_line(review["review"])
+        ui.ai_box(f"**Recommended action: {action}**" + "\n\n" + body,
+                  f"Loan Servicing Agent in notebook 08 - {review.get('tool_call_count')} Unity Catalog tool calls",
+                  key=f"review_{loan_id}")
+
+
+def _preferred_action(loan_id: str, ai: dict) -> str | None:
+    """The agent's latest suggestion: on-demand analysis first, then the batch review."""
+    for item in st.session_state.get(f"analysis_{loan_id}", []):
+        action = ui.recommended_action(item.get("answer", ""))
+        if action:
+            return action
+    review = ai.get("reviews", {}).get(loan_id)
+    return review.get("recommended_action") if review else None
+
+
+def _next_step(client, loan_id: str, detail: dict, ai: dict) -> None:
+    st.markdown("#### Next step - you decide")
+    actions = detail.get("actions") or []
+    latest = actions[0] if actions else None
+    if latest and latest["status"] in ("APPROVED", "SUBMITTED", "VERIFIED", "FAILED", "VERIFICATION_FAILED"):
+        verification = (client.action(latest["action_id"]).get("verification") or {}).get("verification_status")
+        label = ui.nice(latest["action_type"])
+        if verification == "VERIFIED":
+            st.success(f"**{label}** was verified in the servicing system (follow-up {latest.get('followup_date')}).",
+                       icon=":material/verified:")
+        elif latest["status"] in ("FAILED", "VERIFICATION_FAILED") or verification in ("NOT_FOUND", "MISMATCH",
+                                                                                       "DUPLICATE", "FAILED"):
+            st.error(f"**{label}** did not land in the servicing system ({ui.nice(verification)}). "
+                     "It is back in the queue.", icon=":material/error:")
+        else:
+            st.info(f"**{label}** is scheduled in the servicing system (follow-up {latest.get('followup_date')}) "
+                    "and awaiting verification.", icon=":material/schedule:")
+            if st.button("Verify now", icon=":material/sync:", help="Refresh from the servicing system and check"):
+                client.refresh()
+                st.rerun()
+            return
+    preferred = _preferred_action(loan_id, ai)
+    preview = client.next_step(loan_id, preferred)
+    allowed = [a for a in preview["allowed_actions"] if a != "NO_ACTION"]
+    if preview["pending_actions"]:
+        st.info("An approved action is already pending for this loan.")
+        return
+    if not allowed:
+        st.success("No action is needed for this loan right now.", icon=":material/check_circle:")
+        return
+    default = preview["action_type"] if preview["action_type"] in allowed else allowed[0]
+    action = st.selectbox("Action", allowed, index=allowed.index(default), format_func=ui.nice,
+                          key=f"next_action_{loan_id}",
+                          help="Only actions the rules allow for this loan. Preselected: the agent's recommendation.")
+    event = client.next_step(loan_id, action)["event"]
+    source = "the agent's recommendation" if preferred == action else "your choice"
+    st.caption(f"Proposed: **{ui.nice(event.get('event_type'))}** for **{ui.nice(event.get('milestone_type'))}** "
+               f"({source}). Nothing is sent until you confirm.")
+    with st.form(f"schedule_{loan_id}_{action}", border=False):
+        c1, c2 = st.columns([1, 3])
+        followup = c1.date_input("Follow-up date", value=date.fromisoformat(event["followup_date"])
+                                 if event.get("followup_date") else None)
+        note = c2.text_area("Servicing note", value=event.get("event_note") or "", height=70)
+        outreach = event.get("outreach_text") or ""
+        if action in ("CONTACT_ATTORNEY", "CONTACT_SERVICING_VENDOR"):
+            outreach = st.text_area("Outreach message", value=outreach, height=90)
+        if st.form_submit_button("Confirm and schedule", type="primary", icon=":material/event_available:"):
+            try:
+                result = client.schedule(loan_id, {"action_type": action,
+                                                   "followup_date": followup.isoformat() if followup else None,
+                                                   "note": note, "outreach": outreach or None})
+                status = result["action"]["status"] if result.get("action") else "recorded"
+                st.toast(f"{ui.nice(action)}: {ui.nice(status)}")
+            except ApiError as exc:
+                detail_text = exc.detail
+                if isinstance(detail_text, dict) and detail_text.get("errors"):
+                    detail_text = "; ".join(e["message"] for e in detail_text["errors"])
+                st.session_state[f"schedule_error_{loan_id}"] = str(detail_text)
+            st.rerun()
+    error = st.session_state.pop(f"schedule_error_{loan_id}", None)
+    if error:
+        st.error(f"Not scheduled - the rules rejected it: {error}")
 
 
 def _on_demand(client, loan_id: str) -> None:
@@ -109,9 +185,15 @@ def render() -> None:
     left, right = st.columns(2, gap="large")
     with left:
         _rule_facts(detail)
+    ai = client.backend_ai()
     with right:
-        _backend_ai(loan_id, client.backend_ai())
+        _backend_ai(loan_id, ai)
     st.divider()
     _on_demand(client, loan_id)
-    with st.expander("Servicing event timeline"):
-        ui.timeline(client.events(loan_id))
+    st.divider()
+    left, right = st.columns([3, 2], gap="large")
+    with left:
+        _next_step(client, loan_id, detail, ai)
+    with right:
+        st.markdown("#### Servicing timeline")
+        ui.timeline(client.events(loan_id)[-8:])

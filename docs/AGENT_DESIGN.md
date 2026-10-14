@@ -55,6 +55,15 @@ fallback is recorded in the trace and the recommendation's `uncertainty`.
 The in-app agent (`ToolCallingLoanServicingAgent`, 29 Python tools) remains the engine for Loan 360 assessments
 and backend triage because it builds validated recommendations and outbound event drafts against live state.
 
+## 2b. Tracing and production monitoring (MLflow 3)
+
+- Notebook 06 pins `mlflow>=3.1.0` and `databricks-agents>=1.2.0` and uses one experiment,
+  `/Users/<you>/loan-servicing-agent`, for notebook tests, the logged model, and real-time production traces from
+  the endpoint (`ENABLE_MLFLOW_TRACING`, `MLFLOW_EXPERIMENT_ID` are set by `agents.deploy`).
+- Notebook 09 registers production monitoring judges that score every new trace: `safety`, `relevance_to_query`,
+  and two guidelines, `no_legal_or_financial_advice` and `grounded_in_tools`; it also runs
+  `mlflow.genai.evaluate` over recent traces so assessments appear in the experiment immediately.
+
 ## 3. Assessment loop (LLM agent)
 
 ```text

@@ -12,7 +12,7 @@
 
 # COMMAND ----------
 
-# MAGIC %pip install -q "mlflow>=3.1" databricks-agents "databricks-sdk>=0.50"
+# MAGIC %pip install -q "mlflow>=3.1.0" "databricks-agents>=1.2.0" "databricks-sdk>=0.50"
 
 
 # COMMAND ----------
@@ -20,6 +20,16 @@
 dbutils.library.restartPython()
 
 # COMMAND ----------
+
+import importlib.metadata as md
+
+import mlflow
+
+# MLflow 3 gives real-time tracing of the deployed agent. One experiment holds everything: notebook tests,
+# the logged model, and every production trace from the serving endpoint.
+print("mlflow", md.version("mlflow"), "| databricks-agents", md.version("databricks-agents"))
+user = spark.sql("SELECT current_user()").first()[0]
+experiment = mlflow.set_experiment(f"/Users/{user}/loan-servicing-agent")
 
 dbutils.widgets.text("catalog", "main")
 dbutils.widgets.text("schema", "loan_servicing_intelligence")
@@ -205,7 +215,6 @@ print(email.output[-1].content[0]["text"])
 
 # COMMAND ----------
 
-import mlflow
 from mlflow.models.resources import (DatabricksFunction, DatabricksServingEndpoint, DatabricksSQLWarehouse,
                                      DatabricksTable)
 
@@ -226,7 +235,7 @@ with mlflow.start_run(run_name="loan-servicing-agent"):
         python_model="agent.py",
         model_config=AGENT_CONFIG,
         resources=resources,
-        pip_requirements=["mlflow>=3.1", "databricks-sdk>=0.50"],
+        pip_requirements=["mlflow>=3.1.0", "databricks-sdk>=0.50"],
         input_example={"input": [{"role": "user", "content": "Which loans need attention first today?"}]},
         registered_model_name=MODEL_NAME,
     )
@@ -247,3 +256,4 @@ deployment = agents.deploy(MODEL_NAME, logged.registered_model_version, endpoint
                            scale_to_zero=True)
 print("Endpoint:", deployment.endpoint_name)
 print("Review app:", deployment.review_app_url)
+print("Traces:", f"Experiment {experiment.name} - every request to the endpoint is traced in real time")

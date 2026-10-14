@@ -87,14 +87,16 @@ spark.sql(f"USE SCHEMA `{dbutils.widgets.get('schema')}`")
 # MAGIC SELECT
 # MAGIC   ai_query(
 # MAGIC     'databricks-claude-sonnet-4-5',
-# MAGIC     CONCAT('Write a 3-sentence morning briefing for servicing managers from these SYNTHETIC portfolio ',
-# MAGIC            'facts. Use only numbers present in the facts. Facts (JSON): ', facts_json)
+# MAGIC     CONCAT('Write a morning briefing for servicing managers from these SYNTHETIC portfolio facts: three ',
+# MAGIC            'short markdown bullets, no title and no date. Use only numbers present in the facts. ',
+# MAGIC            'Facts (JSON): ', facts_json)
 # MAGIC   ) AS briefing,
 # MAGIC   'databricks-claude-sonnet-4-5' AS model_endpoint,
 # MAGIC   current_timestamp() AS generated_at
 # MAGIC FROM (
 # MAGIC   SELECT to_json(collect_list(named_struct('group', fact_group, 'name', fact_name, 'value', fact_value))) AS facts_json
 # MAGIC   FROM gold_portfolio_briefing_facts
+# MAGIC   WHERE fact_name <> 'processing_date'   -- the app shows today's date itself
 # MAGIC )
 
 # COMMAND ----------

@@ -1,6 +1,8 @@
 """Portfolio: every loan, with the AI that Databricks created for it."""
 from __future__ import annotations
 
+from datetime import date
+
 import streamlit as st
 
 from app import ui
@@ -27,8 +29,10 @@ def render() -> None:
 
     briefing = ai.get("briefing")
     if briefing:
-        ui.ai_box(briefing["briefing"], f"Portfolio briefing written in Databricks by ai_query "
-                                        f"({briefing.get('model_endpoint')}) at {briefing.get('generated_at')} UTC")
+        st.markdown(f"#### Today's briefing - {date.today():%B %d, %Y}")
+        ui.ai_box(ui.strip_title(briefing["briefing"]),
+                  f"Written in Databricks by AI Functions (ai_query, {briefing.get('model_endpoint')}), "
+                  f"{str(briefing.get('generated_at'))[:16]} UTC", key="briefing")
     elif not ai.get("available"):
         st.info(ai.get("reason", "Run the lsi-pipeline workflow to generate AI outputs."))
     st.write("")

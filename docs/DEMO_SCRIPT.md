@@ -36,7 +36,9 @@
 | 11 | Loan `LSI-SYN-000006` | Rule facts and backend AI side by side | Facts with rule IDs; what the backend AI concluded. |
 | 12 | Loan - **Run AI analysis now** | Live tool chain | The on-demand side: the same agent, live. |
 | 13 | Loan - custom instruction "Draft an email to the assigned attorney" | The email in the answer | Augment the agent per request without redeploying. |
-| 14 | The Agent | Tool catalog, links to Serving, Playground, Unity Catalog | Governed tools, registered model, traces. |
+| 14 | Loan - **Next step** | Confirm and schedule, then Verify now | A person decides; the timeline goes Proposed -> Scheduled -> Verified. |
+| 15 | Databricks - experiment `loan-servicing-agent` and notebook `09_monitor_agent` | Traces, judges, Evaluations tab | MLflow 3 real-time tracing of every request; production monitoring scores each one. |
+| 16 | The Agent | Tool catalog, links to Serving, Playground, Unity Catalog | Governed tools, registered model, traces. |
 
 ## Fallbacks
 

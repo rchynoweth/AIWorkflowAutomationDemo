@@ -112,6 +112,16 @@ class BatchAgentRequest(BaseModel):
     agent_mode: Literal["auto", "llm", "deterministic"] | None = None
 
 
+class ScheduleRequest(BaseModel):
+    action_type: str
+    followup_date: str | None = None
+    note: str | None = None
+    outreach: str | None = None
+    reviewer_id: str = "SPEC-01"
+    reviewer_role: str = "LOAN_SERVICING_SPECIALIST"
+    send: bool = True
+
+
 class AgentChatRequest(BaseModel):
     messages: list[dict]
     instructions: str | None = None

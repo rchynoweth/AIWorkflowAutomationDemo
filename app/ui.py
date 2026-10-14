@@ -42,6 +42,9 @@ CSS = """
            margin:4px 0 12px 0; font-size:0.9rem;}
 .lsi-talk ul {margin:4px 0 0 0;}
 .lsi-why {color:#475467; font-size:0.85rem;}
+div[class*="st-key-aibox"] {border-left:4px solid #6941C6; background:rgba(105,65,198,0.06); padding:10px 16px;
+                            border-radius:6px; gap:0.3rem;}
+div[class*="st-key-aibox"] p, div[class*="st-key-aibox"] li {font-size:0.95rem;}
 </style>
 """
 
@@ -70,10 +73,36 @@ def card(label: str, value, color: str | None = None) -> str:
     return f'<div class="lsi-card"><div class="label">{esc(label)}</div><div class="value"{style}>{value}</div></div>'
 
 
-def ai_box(text: str, source: str) -> None:
-    """Purple box for AI-generated content, with where it was produced."""
-    st.markdown(f'<div class="lsi-ai">{esc(text).replace(chr(10), "<br>")}<div class="lsi-src">{esc(source)}</div>'
-                f'</div>', unsafe_allow_html=True)
+def ai_box(text: str, source: str, key: str) -> None:
+    """Purple panel for AI-generated content. The text is rendered as Markdown (bold, bullets), with its source."""
+    with st.container(key=f"aibox_{key}"):
+        st.markdown(text)
+        st.caption(source)
+
+
+def recommended_action(text: str) -> str | None:
+    """The ACTION from an agent answer's 'Recommended action: ACTION' line, if present."""
+    for line in (text or "").splitlines():
+        cleaned = line.replace("*", "").replace("`", "").strip()
+        if cleaned.lower().startswith("recommended action:"):
+            word = cleaned.split(":", 1)[1].strip().split(" ")[0].strip(".").upper()
+            return word or None
+    return None
+
+
+def strip_recommended_line(text: str) -> str:
+    """Remove the 'Recommended action:' line (shown separately as a heading)."""
+    return "\n".join(line for line in (text or "").splitlines()
+                     if not line.replace("*", "").strip().lower().startswith("recommended action:")).strip()
+
+
+def strip_title(text: str) -> str:
+    """Drop a leading title line the model sometimes adds (for example '**Morning Briefing - <date>**')."""
+    lines = (text or "").strip().splitlines()
+    while lines and (lines[0].startswith("#") or (lines[0].startswith("**") and lines[0].rstrip().endswith("**")
+                                                  and len(lines[0]) < 90)):
+        lines = lines[1:]
+    return "\n".join(lines).strip()
 
 
 # ---- presenter notes ------------------------------------------------------------------------------
@@ -116,7 +145,7 @@ def _cell(row: dict, col: str, ai: dict) -> str:
         return f'<span style="color:{color}; font-weight:700">{esc(nice(row.get("priority")))}</span>'
     if col == "ai":
         insight = ai.get("insights", {}).get(row["loan_id"])
-        return f'<span class="lsi-why">{esc(insight["ai_summary"])}</span>' if insight else "<span class='lsi-why'>-</span>"
+        return f"<span class='lsi-why'>{esc(insight['ai_summary'].replace('**', ''))}</span>" if insight else "<span class='lsi-why'>-</span>"
     if col == "agent":
         review = ai.get("reviews", {}).get(row["loan_id"])
         if not review:
@@ -155,6 +184,11 @@ def loan_list(rows: list[dict], ai: dict, key: str, columns: list[str], page_siz
             st.rerun()
 
 
+TIMELINE_LABELS = {"PROPOSED": "Proposed - needs confirmation", "APPROVED": "Approved - not yet sent",
+                   "SUBMITTED": "Scheduled - awaiting verification", "VERIFIED": "Verified",
+                   "FAILED": "Failed", "CURRENT": "Current milestone"}
+
+
 # ---- event timeline ---------------------------------------------------------------------------------
 def timeline(events: list[dict]) -> None:
     if not events:
@@ -172,7 +206,7 @@ def timeline(events: list[dict]) -> None:
         if ev.get("milestone_type"):
             title += f" - {esc(nice(ev['milestone_type']))}"
         items.append(f'<div class="lsi-tl-item"><div class="lsi-tl-dot" style="background:'
-                     f'{STATE_COLORS.get(state, "#98A2B3")}"></div>{title} {badge(nice(state), STATE_COLORS.get(state))}'
+                     f'{STATE_COLORS.get(state, "#98A2B3")}"></div>{title} {badge(TIMELINE_LABELS.get(state, nice(state)), STATE_COLORS.get(state))}'
                      f'<div class="lsi-tl-meta">{dates}</div>'
                      f'<div style="font-size:0.86rem">{esc(ev.get("event_note"))}</div></div>')
     st.markdown(f'<div class="lsi-tl">{"".join(items)}</div>', unsafe_allow_html=True)

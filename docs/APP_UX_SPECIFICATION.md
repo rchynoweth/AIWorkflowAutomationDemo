@@ -12,7 +12,7 @@
 
 ## 1. Portfolio (default page)
 - Four cards: active loans, need attention, AI summaries, reviewed by the agent.
-- AI portfolio briefing from `gold_ai_portfolio_briefing` (AI Functions, notebook 07).
+- AI portfolio briefing (dated today) from `gold_ai_portfolio_briefing` (AI Functions, notebook 07).
 - Loan list (highest attention first): loan (click to open), priority, condition, score, **AI summary**
   (`gold_ai_loan_insights`), **Agent review** (recommended action and tool-call count from `gold_agent_loan_reviews`).
 - Search, priority filter, and "Only loans with AI" toggle.
@@ -24,7 +24,12 @@
   tools called, review text), each labelled with its source.
 - **On-demand AI analysis**: *Run AI analysis now* sends a review request to the deployed agent; a chat box sends
   follow-up questions. Each answer shows the tool chain and the rows each Unity Catalog tool returned.
-- Servicing event timeline in an expander.
+- **Next step - you decide**: the rules' allowed actions, preselected with the agent's recommendation (on-demand
+  analysis first, then the batch review). The specialist can change the action, follow-up date, note, and outreach,
+  then **Confirm and schedule**: the decision is recorded (APPROVE or EDIT), re-validated, and sent to the servicing
+  system. The panel then shows *Scheduled - awaiting verification* with **Verify now**, and finally *Verified*.
+- **Servicing timeline** beside it, labelling Proposed, Approved, Scheduled, Verified, and Current milestone.
+- AI panels render Markdown (bold, bullets) and state where they were produced.
 
 ## 3. The Agent
 - Endpoint status, model version, tool count; links to the serving endpoint, AI Playground, the model in Unity

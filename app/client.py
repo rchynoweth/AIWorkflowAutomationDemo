@@ -121,6 +121,12 @@ class ApiClient:
     def run_pipeline(self):
         return self.post("/api/backend/run-pipeline")
 
+    def next_step(self, loan_id: str, action: str | None = None):
+        return self.get(f"/api/loans/{loan_id}/next-step", action=action)
+
+    def schedule(self, loan_id: str, body: dict):
+        return self.post(f"/api/loans/{loan_id}/schedule", body)
+
     def backend_ai(self):
         return self.get("/api/ai/backend")
 

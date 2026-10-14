@@ -10,7 +10,7 @@ from fastapi.encoders import jsonable_encoder
 from src import databricks
 from src.agent import LlmError
 from src.config import get_settings
-from src.models import AgentChatRequest, AgentRequest, BatchAgentRequest, DecisionRequest, EvaluationRequest
+from src.models import AgentChatRequest, ScheduleRequest, AgentRequest, BatchAgentRequest, DecisionRequest, EvaluationRequest
 from src.service import InvalidState, LoanServicingService, NotFound, ValidationFailed
 from src.storage import create_repository
 
@@ -208,6 +208,17 @@ def loan(loan_id: str, service: LoanServicingService = Depends(svc)):
 @app.get("/api/loans/{loan_id}/events")
 def loan_events(loan_id: str, include_payments: bool = False, service: LoanServicingService = Depends(svc)):
     return _handle(service.loan_events, loan_id, include_payments)
+
+
+@app.get("/api/loans/{loan_id}/next-step")
+def next_step(loan_id: str, action: str | None = None, service: LoanServicingService = Depends(svc)):
+    return _handle(service.next_step, loan_id, action)
+
+
+@app.post("/api/loans/{loan_id}/schedule")
+def schedule(loan_id: str, request: ScheduleRequest, service: LoanServicingService = Depends(svc)):
+    return _handle(service.schedule_next_step, loan_id, request.action_type, request.followup_date, request.note,
+                   request.outreach, request.reviewer_id, request.reviewer_role, "loan view", request.send)
 
 
 @app.get("/api/loans/{loan_id}/recommendations")
