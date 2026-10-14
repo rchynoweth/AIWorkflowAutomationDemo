@@ -152,7 +152,7 @@ def agent_deployment(service: LoanServicingService = Depends(svc)):
 @app.post("/api/agent/deployed/chat")
 def agent_deployed_chat(request: AgentChatRequest):
     try:
-        return databricks.chat(request.messages)
+        return databricks.chat(request.messages, request.instructions)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=503, detail=f"Deployed agent unavailable: {str(exc)[:300]}") from exc
 

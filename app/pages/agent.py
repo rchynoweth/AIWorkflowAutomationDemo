@@ -92,6 +92,8 @@ def _chat(client, dep: dict) -> None:
         st.info("The serving endpoint is not ready yet (deploying or waking from scale-to-zero). "
                 "The first call after idle can take a few minutes.")
     history = st.session_state.setdefault("agent_chat", [])
+    from app import ui
+    instructions = ui.instructions_box("agent_page")
     cols = st.columns(len(PROMPTS))
     asked = None
     for i, prompt in enumerate(PROMPTS):
@@ -103,7 +105,8 @@ def _chat(client, dep: dict) -> None:
         history.append({"role": "user", "content": asked})
         with st.spinner("Agent is choosing tools and querying Unity Catalog..."):
             try:
-                result = client.agent_chat([{"role": m["role"], "content": m["content"]} for m in history][-8:])
+                result = client.agent_chat([{"role": m["role"], "content": m["content"]} for m in history][-8:],
+                                           instructions or None)
                 history.append({"role": "assistant", "content": result["answer"], "steps": result["steps"],
                                 "seconds": result["seconds"]})
             except ApiError as exc:

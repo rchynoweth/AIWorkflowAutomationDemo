@@ -14,6 +14,7 @@
 
 # MAGIC %pip install -q "mlflow>=3.1" databricks-agents "databricks-sdk>=0.50"
 
+
 # COMMAND ----------
 
 dbutils.library.restartPython()
@@ -120,7 +121,11 @@ ENDPOINT_NAME = "loan-servicing-agent"
 # MAGIC
 # MAGIC class LoanServicingAgent(ResponsesAgent):
 # MAGIC     def predict(self, request: ResponsesAgentRequest) -> ResponsesAgentResponse:
-# MAGIC         messages = [{"role": "system", "content": SYSTEM_PROMPT}] + self.prep_msgs_for_cc_llm(request.input)
+# MAGIC         system = SYSTEM_PROMPT
+# MAGIC         instructions = (request.custom_inputs or {}).get("instructions")   # optional: augment the agent per call
+# MAGIC         if instructions:
+# MAGIC             system += "\n\nAdditional instructions for this request:\n" + instructions
+# MAGIC         messages = [{"role": "system", "content": system}] + self.prep_msgs_for_cc_llm(request.input)
 # MAGIC         output = []
 # MAGIC         for _ in range(10):                                    # the agent loop
 # MAGIC             message = call_llm(messages)
@@ -164,6 +169,19 @@ for item in response.output:
         print("Tool call:", item.name, item.arguments)
 print()
 print(response.output[-1].content[0]["text"])
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **Augment it per request.** Pass `custom_inputs={"instructions": ...}` to steer the same agent - for example to
+# MAGIC draft an email instead of an analysis. The app's on-demand panel uses exactly this.
+
+# COMMAND ----------
+
+email = agent.AGENT.predict(ResponsesAgentRequest(
+    input=[{"role": "user", "content": "Draft a follow-up to the assigned attorney about loan LSI-SYN-000005."}],
+    custom_inputs={"instructions": "Write a polite email of at most 120 words, signed 'Loan Servicing Team'."}))
+print(email.output[-1].content[0]["text"])
 
 # COMMAND ----------
 

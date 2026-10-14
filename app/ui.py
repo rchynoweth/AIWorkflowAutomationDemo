@@ -195,3 +195,25 @@ def agent_response(result: dict) -> None:
                 except (ValueError, TypeError):
                     st.code(str(step["output"])[:1500])
     st.markdown(result.get("answer") or "")
+
+
+# ---- custom instructions for the on-demand agent ----------------------------------------------------
+PRESETS = {
+    "None - standard analysis": "",
+    "Draft an email to the assigned attorney or vendor":
+        "Finish with a short, polite email (at most 120 words) to the assigned attorney or vendor asking for a "
+        "status update. Sign it 'Loan Servicing Team'.",
+    "Summarize for a manager": "Answer as three bullets a servicing manager can read in ten seconds.",
+    "Focus on missing information": "Focus on what information is missing or inconsistent and how to get it.",
+    "Explain for a new team member": "Explain it simply for someone new to loan servicing, defining any terms.",
+}
+
+
+def instructions_box(key: str) -> str:
+    """Preset or free-text instructions that augment the deployed agent for one request (custom_inputs)."""
+    left, right = st.columns([1, 2])
+    preset = left.selectbox("Custom instructions", list(PRESETS), key=f"{key}_preset",
+                            help="Sent with the request as custom_inputs; the agent appends them to its instructions.")
+    text = right.text_area("Instructions sent to the agent", value=PRESETS[preset], key=f"{key}_text_{preset}",
+                           height=68, placeholder="Optional: add your own instructions for this request")
+    return text.strip()

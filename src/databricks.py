@@ -262,11 +262,14 @@ def uc_tools(w, settings, links: dict | None = None) -> list[dict]:
     return sorted(tools, key=lambda t: (order.get(t["group"], 99), t["tool"]))
 
 
-def chat(messages: list[dict]) -> dict:
+def chat(messages: list[dict], instructions: str | None = None) -> dict:
     """Query the deployed agent. Returns the answer text plus the tool-call steps from its output items."""
     w = _client()
     started = time.perf_counter()
-    response = w.api_client.do("POST", f"/serving-endpoints/{ENDPOINT_NAME}/invocations", body={"input": messages})
+    body = {"input": messages}
+    if instructions:
+        body["custom_inputs"] = {"instructions": instructions}   # augments the agent's system prompt for this call
+    response = w.api_client.do("POST", f"/serving-endpoints/{ENDPOINT_NAME}/invocations", body=body)
     steps, answer, outputs = [], [], {}
     for item in response.get("output", []):
         kind = item.get("type")

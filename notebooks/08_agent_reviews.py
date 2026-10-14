@@ -17,9 +17,11 @@
 dbutils.widgets.text("catalog", "main", "Catalog")
 dbutils.widgets.text("schema", "loan_servicing_intelligence", "Schema")
 dbutils.widgets.text("loans_to_review", "8", "Loans to review")
+dbutils.widgets.text("instructions", "", "Custom instructions for the agent (optional)")
 spark.sql(f"USE CATALOG `{dbutils.widgets.get('catalog')}`")
 spark.sql(f"USE SCHEMA `{dbutils.widgets.get('schema')}`")
 AGENT_ENDPOINT = "loan-servicing-agent"
+INSTRUCTIONS = dbutils.widgets.get("instructions")
 
 # COMMAND ----------
 
@@ -36,11 +38,14 @@ from databricks.sdk import WorkspaceClient
 w = WorkspaceClient()
 
 
-def ask_agent(question: str) -> dict:
-    """Send one question to the deployed agent; return its answer and the tools it chose to call."""
+def ask_agent(question: str, instructions: str = "") -> dict:
+    """Send one question to the deployed agent; return its answer and the tools it chose to call.
+    Optional instructions augment the agent for this request (custom_inputs)."""
     started = time.time()
-    response = w.api_client.do("POST", f"/serving-endpoints/{AGENT_ENDPOINT}/invocations",
-                               body={"input": [{"role": "user", "content": question}]})
+    body = {"input": [{"role": "user", "content": question}]}
+    if instructions:
+        body["custom_inputs"] = {"instructions": instructions}
+    response = w.api_client.do("POST", f"/serving-endpoints/{AGENT_ENDPOINT}/invocations", body=body)
     tools = [item["name"] for item in response["output"] if item.get("type") == "function_call"]
     answer = "\n".join(part.get("text", "") for item in response["output"] if item.get("type") == "message"
                        for part in item.get("content", []))
@@ -90,7 +95,7 @@ PROMPT = ("Review loan {loan_id}. Using your tools, explain in 3 to 5 short bull
 
 
 def review(row) -> dict:
-    result = ask_agent(PROMPT.format(loan_id=row.loan_id))
+    result = ask_agent(PROMPT.format(loan_id=row.loan_id), INSTRUCTIONS)
     match = re.search(r"Recommended action:\s*\**([A-Z_]+)", result["answer"])
     return {"loan_id": row.loan_id, "priority": row.priority, "primary_condition": row.primary_condition,
             "attention_score": row.attention_score, "review": result["answer"],

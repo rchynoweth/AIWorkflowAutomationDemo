@@ -64,6 +64,7 @@ def _on_demand(client, loan_id: str) -> None:
     st.caption("Calls the deployed Loan Servicing Agent on Model Serving right now. It chooses its own Unity "
                "Catalog tools; nothing is changed or sent.")
     history = st.session_state.setdefault(f"analysis_{loan_id}", [])
+    instructions = ui.instructions_box(f"loan_{loan_id}")
     left, right = st.columns([1, 3])
     run = left.button("Run AI analysis now", type="primary", icon=":material/auto_awesome:")
     question = right.chat_input("Ask the agent about this loan")
@@ -72,13 +73,16 @@ def _on_demand(client, loan_id: str) -> None:
     if prompt:
         with st.spinner("The agent is choosing tools and querying Unity Catalog..."):
             try:
-                result = client.agent_chat([{"role": "user", "content": prompt}])
-                history.insert(0, {"question": "Full analysis" if run else question, **result})
+                result = client.agent_chat([{"role": "user", "content": prompt}], instructions or None)
+                history.insert(0, {"question": "Full analysis" if run else question, "instructions": instructions,
+                                   **result})
             except ApiError as exc:
                 st.error(f"The deployed agent did not respond (it may be waking from scale-to-zero): {exc.detail}")
     for item in history:
         with st.container(border=True):
             st.markdown(f"**{ui.esc(item['question'])}**")
+            if item.get("instructions"):
+                st.caption(f"Custom instructions: {item['instructions']}")
             ui.agent_response(item)
 
 

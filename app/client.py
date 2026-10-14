@@ -112,8 +112,8 @@ class ApiClient:
     def agent_deployment(self):
         return self.get("/api/agent/deployment")
 
-    def agent_chat(self, messages: list[dict]):
-        return self.post("/api/agent/deployed/chat", {"messages": messages})
+    def agent_chat(self, messages: list[dict], instructions: str | None = None):
+        return self.post("/api/agent/deployed/chat", {"messages": messages, "instructions": instructions})
 
     def resources(self):
         return self.get("/api/backend/resources")

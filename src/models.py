@@ -114,6 +114,7 @@ class BatchAgentRequest(BaseModel):
 
 class AgentChatRequest(BaseModel):
     messages: list[dict]
+    instructions: str | None = None
 
 
 class EvaluationRequest(BaseModel):

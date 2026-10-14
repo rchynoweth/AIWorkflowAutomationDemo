@@ -74,7 +74,11 @@ def call_llm(messages: list) -> dict:
 
 class LoanServicingAgent(ResponsesAgent):
     def predict(self, request: ResponsesAgentRequest) -> ResponsesAgentResponse:
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}] + self.prep_msgs_for_cc_llm(request.input)
+        system = SYSTEM_PROMPT
+        instructions = (request.custom_inputs or {}).get("instructions")   # optional: augment the agent per call
+        if instructions:
+            system += "\n\nAdditional instructions for this request:\n" + instructions
+        messages = [{"role": "system", "content": system}] + self.prep_msgs_for_cc_llm(request.input)
         output = []
         for _ in range(10):                                    # the agent loop
             message = call_llm(messages)

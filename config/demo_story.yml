@@ -14,6 +14,7 @@ page_notes:
     story:
       - "Left: deterministic facts from the rules engine, each with a rule ID. Right: what the AI backend already concluded."
       - "Run AI analysis now: the agent investigates live and shows every tool it chose. It recommends; a person decides."
+      - "Pick a custom instruction - for example draft an email to the attorney - to steer the same agent for this request."
     databricks:
       - "The on-demand call goes to the Loan Servicing Agent on Model Serving; its tools are Unity Catalog functions and every call is traced in MLflow."
   agent:
