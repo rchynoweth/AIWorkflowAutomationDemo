@@ -182,12 +182,10 @@ def render() -> None:
                 f"{state['days_overdue']} days overdue - {ui.esc(ui.nice(loan['payment_status']))} - "
                 f"{ui.esc(ui.nice(loan['foreclosure_status']))}</div>", unsafe_allow_html=True)
     st.write("")
-    left, right = st.columns(2, gap="large")
-    with left:
-        _rule_facts(detail)
     ai = client.backend_ai()
-    with right:
-        _backend_ai(loan_id, ai)
+    _backend_ai(loan_id, ai)
+    st.divider()
+    _rule_facts(detail)
     st.divider()
     _on_demand(client, loan_id)
     st.divider()
