@@ -108,8 +108,9 @@ def backend(service: LoanServicingService = Depends(svc)):
 
 @app.get("/api/ai/backend")
 def backend_ai(service: LoanServicingService = Depends(svc)):
-    """AI created in Databricks: AI Functions summaries, agent reviews, and the portfolio briefing."""
-    return jsonable_encoder(service.backend_ai)
+    """AI created in Databricks: AI Functions summaries, agent reviews, and the portfolio briefing.
+    Re-read from the Gold tables at most every 5 minutes, so new workflow results appear without a reload."""
+    return jsonable_encoder(service.current_backend_ai())
 
 
 @app.get("/api/backend/resources")

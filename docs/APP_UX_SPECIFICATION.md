@@ -5,8 +5,8 @@
 
 - Framework: Streamlit (Databricks Apps), `app/main.py` + `app/navigation.py`; pages in `app/pages/`, shared
   building blocks in `app/ui.py`. All data goes through the REST API (`app/client.py`).
-- Sidebar: **Presenter notes** toggle (talk track from `config/demo_story.yml`), `lsi-pipeline` workflow status
-  with **Open run in Databricks** and **Run workflow now**, and **Sync AI results** (reloads Gold tables).
+- Sidebar: **Presenter notes** toggle only (talk track from `config/demo_story.yml`). AI results from the
+  workflow are re-read from Gold automatically every 5 minutes.
 - Purple boxes are AI output and always state where they were produced (notebook, function, endpoint).
   Blue boxes are deterministic rule facts with rule IDs.
 

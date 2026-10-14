@@ -440,6 +440,7 @@ class LoanServicingService:
                 self.generate_baseline_recommendations()
             from src.databricks import backend_ai
             self.backend_ai = backend_ai(self.repository)
+            self._backend_ai_read_at = time.time()
             self.loaded_at = utcnow()
             log.info("Service loaded in %.1fs (backend=%s)", time.perf_counter() - started, self.repository.backend)
         return self
@@ -729,6 +730,15 @@ class LoanServicingService:
         with self.lock:
             self._persist_activity(buffer)
         return {"run_id": run.run_id, "facts": facts, **result}
+
+    def current_backend_ai(self, max_age_seconds: int = 300) -> dict:
+        """AI outputs from the Databricks workflow, refreshed from Gold when older than max_age_seconds."""
+        from src.databricks import backend_ai
+
+        if time.time() - getattr(self, "_backend_ai_read_at", 0) > max_age_seconds:
+            self.backend_ai = backend_ai(self.repository)
+            self._backend_ai_read_at = time.time()
+        return self.backend_ai
 
     def triage_candidates(self, limit: int = 10) -> list[str]:
         """Highest-scoring attention loans without a current LLM recommendation (demo spotlight loans excluded)."""
