@@ -36,14 +36,15 @@ dbutils.widgets.text("schema", "loan_servicing_intelligence")
 dbutils.widgets.text("warehouse_id", "", "SQL warehouse ID")
 catalog, schema = dbutils.widgets.get("catalog"), dbutils.widgets.get("schema")
 
+ENDPOINT_NAME = "loan-servicing-agent"
 AGENT_CONFIG = {
     "catalog": catalog,
     "schema": schema,
     "warehouse_id": dbutils.widgets.get("warehouse_id"),   # where the tool functions run
     "llm_endpoint": "databricks-claude-sonnet-5-5",        # Foundation Model API, pay-per-token
+    "endpoint_name": ENDPOINT_NAME,                         # labels production traces for the endpoint
 }
 MODEL_NAME = f"{catalog}.{schema}.loan_servicing_agent"
-ENDPOINT_NAME = "loan-servicing-agent"
 
 # COMMAND ----------
 
@@ -60,6 +61,7 @@ ENDPOINT_NAME = "loan-servicing-agent"
 # MAGIC A tool-calling agent: Claude on Databricks + the lsi_* Unity Catalog functions from notebook 05.
 # MAGIC """
 # MAGIC import json
+# MAGIC import os
 # MAGIC import uuid
 # MAGIC
 # MAGIC import mlflow
@@ -71,7 +73,7 @@ ENDPOINT_NAME = "loan-servicing-agent"
 # MAGIC
 # MAGIC config = ModelConfig(development_config={
 # MAGIC     "catalog": "main", "schema": "loan_servicing_intelligence", "warehouse_id": "",
-# MAGIC     "llm_endpoint": "databricks-claude-sonnet-5-5",
+# MAGIC     "llm_endpoint": "databricks-claude-sonnet-5-5", "endpoint_name": "loan-servicing-agent",
 # MAGIC })
 # MAGIC
 # MAGIC SYSTEM_PROMPT = """You are the Loan Servicing Agent. You help loan-servicing specialists understand which loans need
@@ -144,6 +146,8 @@ ENDPOINT_NAME = "loan-servicing-agent"
 # MAGIC
 # MAGIC class LoanServicingAgent(ResponsesAgent):
 # MAGIC     def predict(self, request: ResponsesAgentRequest) -> ResponsesAgentResponse:
+# MAGIC         if os.environ.get("IS_IN_DB_MODEL_SERVING_ENV"):   # label the trace so the endpoint's Traces page shows it
+# MAGIC             mlflow.update_current_trace(metadata={"mlflow.databricks.modelServingEndpointName": config.get("endpoint_name")})
 # MAGIC         system = SYSTEM_PROMPT
 # MAGIC         instructions = (request.custom_inputs or {}).get("instructions")   # optional: augment the agent per call
 # MAGIC         if instructions:

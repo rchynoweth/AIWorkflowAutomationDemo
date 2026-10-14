@@ -3,6 +3,7 @@
 A tool-calling agent: Claude on Databricks + the lsi_* Unity Catalog functions from notebook 05.
 """
 import json
+import os
 import uuid
 
 import mlflow
@@ -14,7 +15,7 @@ from mlflow.types.responses import ResponsesAgentRequest, ResponsesAgentResponse
 
 config = ModelConfig(development_config={
     "catalog": "main", "schema": "loan_servicing_intelligence", "warehouse_id": "",
-    "llm_endpoint": "databricks-claude-sonnet-5-5",
+    "llm_endpoint": "databricks-claude-sonnet-5-5", "endpoint_name": "loan-servicing-agent",
 })
 
 SYSTEM_PROMPT = """You are the Loan Servicing Agent. You help loan-servicing specialists understand which loans need
@@ -87,6 +88,8 @@ def text_of(message: dict) -> str:
 
 class LoanServicingAgent(ResponsesAgent):
     def predict(self, request: ResponsesAgentRequest) -> ResponsesAgentResponse:
+        if os.environ.get("IS_IN_DB_MODEL_SERVING_ENV"):   # label the trace so the endpoint's Traces page shows it
+            mlflow.update_current_trace(metadata={"mlflow.databricks.modelServingEndpointName": config.get("endpoint_name")})
         system = SYSTEM_PROMPT
         instructions = (request.custom_inputs or {}).get("instructions")   # optional: augment the agent per call
         if instructions:
