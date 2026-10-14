@@ -149,7 +149,8 @@ def timeline(state: dict, proposal: dict | None) -> None:
 
 
 def ask_about_loan(loan_id: str) -> None:
-    with st.expander("Ask the agent anything about this loan"):
+    st.markdown("#### Ask the agent anything about this loan")
+    with st.container(border=True):
         history = st.session_state.setdefault(f"chat_{loan_id}", [])
         question = st.text_input("Question", key=f"question_{loan_id}", label_visibility="collapsed",
                                  placeholder="For example: what has the attorney done on this loan so far?")
