@@ -14,7 +14,7 @@ PRIORITY_COLORS = {"CRITICAL": "#B42318", "HIGH": "#C4560C", "MEDIUM": "#A16207"
 STATE_COLORS = {"COMPLETED": "#6C8F7D", "CURRENT": "#175CD3", "OPEN": "#475467", "OVERDUE": "#B42318",
                 "PROPOSED": "#6941C6", "SCHEDULED": "#027A48"}
 STATE_LABELS = {"CURRENT": "Current milestone", "PROPOSED": "Proposed - needs your confirmation",
-                "SCHEDULED": "Scheduled from the app"}
+                "SCHEDULED": "From the app"}
 
 CSS = """
 <style>

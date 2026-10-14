@@ -69,6 +69,7 @@ spark.sql(f"USE {dbutils.widgets.get('catalog')}.{dbutils.widgets.get('schema')}
 # MAGIC   UNION ALL
 # MAGIC   SELECT action_id, loan_id, action_type, event_type, followup_date, CAST(submitted_at AS DATE), 'App'
 # MAGIC   FROM app_actions
+# MAGIC   WHERE action_type NOT IN ('LOG_FOLLOWUP', 'LOG_NOTE')   -- work a person logged is not an action to verify
 # MAGIC ),
 # MAGIC landed AS (
 # MAGIC   SELECT a.action_id, count(e.event_id) AS events_found, max(e.followup_date) AS landed_followup_date

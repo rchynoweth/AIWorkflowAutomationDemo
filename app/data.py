@@ -126,7 +126,7 @@ def latest_app_action(loan_id: str) -> dict | None:
         SELECT a.action_id, a.action_type, a.followup_date, a.submitted_at, v.verification_status
         FROM {table('app_actions')} a
         LEFT JOIN {table('gold_action_verification')} v USING (action_id)
-        WHERE a.loan_id = :loan_id
+        WHERE a.loan_id = :loan_id AND a.action_type NOT IN ('LOG_FOLLOWUP', 'LOG_NOTE')   -- logged work is not pending
         ORDER BY a.submitted_at DESC
         LIMIT 1""", loan_id=loan_id)
     return rows[0] if rows else None
@@ -177,11 +177,7 @@ def proposal(state: dict, action: str) -> dict:
 
 
 def schedule(state: dict, action: str, followup_date: date, note: str, outreach: str) -> str:
-    """Record the confirmed action and the event the servicing system creates for it. Returns the action ID.
-
-    In production the servicing system would create the event; here the app writes it to
-    servicing_system_events, and the next pipeline run verifies it landed (notebook 04).
-    """
+    """A person confirmed the agent's (or their own) choice of an allowed action. Returns the action ID."""
     if action not in state["allowed_actions"] or action == "NO_ACTION":
         raise ValueError(f"{action} is not an allowed action for this loan.")
     if not date.today() < followup_date <= date.today() + timedelta(days=120):
@@ -189,17 +185,38 @@ def schedule(state: dict, action: str, followup_date: date, note: str, outreach:
     pending = latest_app_action(state["loan_id"])
     if pending and pending["verification_status"] in (None, "PENDING"):
         raise ValueError(f"Action {pending['action_id']} is already waiting to be verified.")
-    action_id = f"ACT-APP-{uuid.uuid4().hex[:8].upper()}"
     event = proposal(state, action)
-    params = dict(action_id=action_id, event_id=f"EVT-APP-{action_id[8:]}", loan_id=state["loan_id"],
-                  action_type=action, event_type=event["event_type"], milestone_type=event["milestone_type"],
-                  followup_date=followup_date.isoformat(), note=note, outreach=outreach or None,
-                  user=st.context.headers.get("X-Forwarded-Email", "app user"))
+    return record(state["loan_id"], action, event["event_type"], event["milestone_type"], followup_date, note, outreach)
+
+
+def log_activity(state: dict, followed_up: bool, note: str, next_followup: date | None) -> str:
+    """Work the specialist did themselves: a follow-up they made (with the next follow-up date) or a note."""
+    if not note.strip():
+        raise ValueError("Add a short note about what happened.")
+    if followed_up:
+        if not next_followup or not date.today() < next_followup <= date.today() + timedelta(days=120):
+            raise ValueError("Set the next follow-up date within the next 120 days.")
+        return record(state["loan_id"], "LOG_FOLLOWUP", "CONTACT", state["current_milestone"], next_followup, note)
+    return record(state["loan_id"], "LOG_NOTE", "NOTE", state["current_milestone"], None, note, status="COMPLETED")
+
+
+def record(loan_id: str, action: str, event_type: str, milestone: str | None, followup_date: date | None, note: str,
+           outreach: str = "", status: str = "OPEN") -> str:
+    """Record the action and the event the servicing system creates for it. Returns the action ID.
+
+    In production the servicing system would create the event; here the app writes it to
+    servicing_system_events, and the next pipeline run verifies it landed (notebook 04).
+    """
+    action_id = f"ACT-APP-{uuid.uuid4().hex[:8].upper()}"
+    params = dict(action_id=action_id, event_id=f"EVT-APP-{action_id[8:]}", loan_id=loan_id, action_type=action,
+                  event_type=event_type, milestone_type=milestone, status=status,
+                  followup_date=followup_date.isoformat() if followup_date else None, note=note,
+                  outreach=outreach or None, user=st.context.headers.get("X-Forwarded-Email", "app user"))
     sql(f"""INSERT INTO {table('app_actions')} VALUES (:action_id, :loan_id, :action_type, :event_type,
             :milestone_type, CAST(:followup_date AS DATE), :note, :outreach, :user, current_timestamp())""", **params)
     write_bulk_upload(params)
     sql(f"""INSERT INTO {table('servicing_system_events')} VALUES (:event_id, :loan_id, :event_type, :milestone_type,
-            current_date(), CAST(:followup_date AS DATE), 'OPEN', concat(:note, ' [ref ', :action_id, ']'),
+            current_date(), CAST(:followup_date AS DATE), :status, concat(:note, ' [ref ', :action_id, ']'),
             'SERVICING_SYSTEM_ADAPTER', current_timestamp())""", **params)
     st.cache_data.clear()
     return action_id
@@ -215,7 +232,7 @@ def write_bulk_upload(params: dict) -> str:
     writer = csv.writer(buffer)
     writer.writerow(["loan_id", "event_type", "milestone_type", "event_date", "followup_date", "note", "reference"])
     writer.writerow([params["loan_id"], params["event_type"], params["milestone_type"] or "", date.today().isoformat(),
-                     params["followup_date"], params["note"], params["action_id"]])
+                     params["followup_date"] or "", params["note"], params["action_id"]])
     path = f"/Volumes/{CATALOG}/{SCHEMA}/outbound/bulk_upload_{date.today():%Y%m%d}_{params['action_id']}.csv"
     client().files.upload(path, io.BytesIO(buffer.getvalue().encode("utf-8")), overwrite=True)
     return path

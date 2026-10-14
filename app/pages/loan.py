@@ -129,6 +129,29 @@ def next_step(state: dict, ai: dict) -> dict | None:
         return review_draft(state, draft)
 
 
+def log_work(state: dict) -> None:
+    """Work the specialist did themselves - recorded in the servicing system the same way as a confirmed action."""
+    st.markdown("#### Log what you did")
+    kind = st.radio("Log", ["I followed up", "Add a note"], horizontal=True, label_visibility="collapsed",
+                    key=f"log_kind_{state['loan_id']}")
+    followed_up = kind == "I followed up"
+    with st.form(f"log_{state['loan_id']}_{kind}", border=False, clear_on_submit=True):
+        c1, c2 = st.columns([3, 1])
+        note = c1.text_area("What happened", height=70, placeholder="For example: called the attorney's office; "
+                            "hearing date to be confirmed by Friday." if followed_up else "Add a note to the loan")
+        next_followup = c2.date_input("Next follow-up", value=data.proposal(state, "CREATE_FOLLOWUP")["followup_date"]
+                                      ) if followed_up else None
+        if st.form_submit_button("Log it", icon=":material/edit_note:"):
+            try:
+                data.log_activity(state, followed_up, note, next_followup)
+                st.toast("Logged and sent to the servicing system as a bulk-upload file")
+                st.rerun()
+            except ValueError as exc:
+                st.error(str(exc))
+    st.caption("A logged follow-up sets the next follow-up date, so the loan stops showing as overdue on the next "
+               "workflow run. A note changes no dates.")
+
+
 def timeline(state: dict, proposal: dict | None) -> None:
     st.markdown("#### Servicing timeline")
     today = date.today().isoformat()
@@ -191,6 +214,8 @@ st.divider()
 left, right = st.columns([3, 2], gap="large")
 with left:
     proposal = next_step(state, ai)
+    st.divider()
+    log_work(state)
 with right:
     timeline(state, proposal)
 st.divider()
