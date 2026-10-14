@@ -35,6 +35,7 @@
 | 12 | Loan - paste the attorney update (placeholder text), click **Re-plan with the agent** | Live tool chain, new draft | The on-demand side: something changed, and the same agent re-plans live, inside the workflow. |
 | 13 | Loan - optional custom instruction "Draft an email to the assigned attorney" | Outreach in the draft | Steer the agent per request without redeploying. |
 | 14 | Loan - edit the date, **Confirm and schedule** | Toast, timeline shows Scheduled | A person decides. The action leaves as a bulk-upload file in the `outbound` volume - no browser automation - and the next workflow run verifies it landed. |
+| 14b | Loan - **Log what you did**: "I followed up" with a note | Timeline shows the contact | Not everything starts with the agent: the specialist logs their own work, and the next run takes the loan off the overdue list. |
 | 15 | Loan `LSI-SYN-000007` - **Have the agent propose the next step** | Create Next Milestone drafted | A loan the overnight run did not cover: the agent drafts on demand. |
 | 16 | Databricks - Traces | The traces for the drafts you just made | MLflow 3 traces every request in real time; LLM judges score them (notebook 09). |
 | 17 | How It Works - One framework | The framework table | Foreclosure milestones first; tax delinquency and invoice processing reuse the same five layers. |
