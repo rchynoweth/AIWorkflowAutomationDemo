@@ -65,20 +65,6 @@ def ai_box(text: str, source: str, key: str) -> None:
         st.caption(source)
 
 
-def recommended_action(text: str) -> str | None:
-    """ACTION from an agent answer's 'Recommended action: ACTION' line."""
-    for line in (text or "").splitlines():
-        cleaned = line.replace("*", "").replace("`", "").strip()
-        if cleaned.lower().startswith("recommended action:"):
-            return cleaned.split(":", 1)[1].strip().split(" ")[0].strip(".").upper() or None
-    return None
-
-
-def without_recommended_line(text: str) -> str:
-    return "\n".join(line for line in (text or "").splitlines()
-                     if not line.replace("*", "").strip().lower().startswith("recommended action:")).strip()
-
-
 # ---- presenter notes --------------------------------------------------------------------------------------------
 @st.cache_data
 def _talk_track() -> dict:
@@ -110,7 +96,7 @@ def loan_list(rows: list[dict], ai: dict, page_size: int = 15) -> None:
     page = min(st.session_state.get("list_page", 1), pages)
     widths = [1.3, 0.9, 1.5, 0.6, 4.0, 1.6]
     for col, header in zip(st.columns(widths), ["Loan", "Priority", "Condition", "Score",
-                                                 "AI summary (Databricks AI Functions)", "Agent review"]):
+                                                 "AI summary (Databricks AI Functions)", "Agent draft (overnight)"]):
         col.markdown(f"<span class='lsi-muted'><b>{header}</b></span>", unsafe_allow_html=True)
     for row in rows[(page - 1) * page_size: page * page_size]:
         cols = st.columns(widths, vertical_alignment="center")
@@ -123,9 +109,10 @@ def loan_list(rows: list[dict], ai: dict, page_size: int = 15) -> None:
         insight = ai["insights"].get(row["loan_id"])
         cols[4].markdown(f"<span class='lsi-muted'>{esc(insight['ai_summary'].replace('**', '')) if insight else '-'}"
                          "</span>", unsafe_allow_html=True)
-        review = ai["reviews"].get(row["loan_id"])
-        cols[5].markdown(f"{nice(review['recommended_action'])}<br><span class='lsi-muted'>{review['tool_call_count']} "
-                         "tool calls</span>" if review else "<span class='lsi-muted'>-</span>", unsafe_allow_html=True)
+        draft = ai["reviews"].get(row["loan_id"])
+        cols[5].markdown(f"{nice(draft['recommended_action'])}<br><span class='lsi-muted'>follow-up "
+                         f"{draft['proposed_followup_date']}</span>" if draft else "<span class='lsi-muted'>-</span>",
+                         unsafe_allow_html=True)
     if pages > 1:
         left, mid, right = st.columns([1, 2, 1])
         if left.button("Previous", disabled=page <= 1, icon=":material/chevron_left:"):

@@ -34,7 +34,7 @@ NOTEBOOKS = [  # notebook, what it does, side
     ("05_agent_tools", "Defines the agent's tools as Unity Catalog SQL functions", "Set up once"),
     ("06_build_and_deploy_agent", "Writes, tests, registers, and deploys the agent", "Set up once"),
     ("07_ai_functions", "Batch AI: ai_query writes loan summaries and a briefing", "Workflow"),
-    ("08_agent_reviews", "Batch agent: the deployed agent reviews the top of the queue", "Workflow"),
+    ("08_agent_reviews", "Batch agent: drafts the next step for the top of the queue", "Workflow"),
     ("09_monitor_agent", "Traces, LLM judges, production monitoring", "Set up once"),
 ]
 
@@ -59,12 +59,28 @@ run = data.last_pipeline_run()
 if run and run.get("url"):
     st.markdown(f"**Last run of `lsi-pipeline`:** {ui.nice(run['state'])}, started {run['started']}")
 
-st.markdown("### Two sides of AI on Databricks")
-st.markdown("- **Batch, behind the scenes:** the workflow brings the data in and prepares AI for every priority loan "
-            "before anyone logs in - `ai_query` summaries (notebook 07) and agent reviews (notebook 08).\n"
-            "- **On demand:** the same agent answers live in the app, steered by custom instructions.\n"
-            "- **Human in the loop:** the agent only recommends. A person confirms the action, and the next workflow "
-            "run verifies that it landed in the servicing system.")
+st.markdown("### Two sides of the same agent")
+st.markdown("- **Overnight, in the workflow:** the data comes in, the rules score every loan, `ai_query` writes "
+            "summaries (notebook 07), and the agent drafts the next step for the top of the queue (notebook 08).\n"
+            "- **On demand, in the app:** when something changes - an attorney replies, a date moves - the specialist "
+            "pastes the update and the same agent re-plans live, steered by custom instructions if needed.\n"
+            "- **Human in the loop:** the agent only drafts. A person edits and confirms; the action goes to the "
+            "servicing system as a bulk-upload file (no browser automation), and the next run verifies it landed.")
+
+st.markdown("### One framework, many servicing workflows")
+st.markdown("Foreclosure milestones are the first workflow. The same five layers carry the next ones - only the data, "
+            "the rules, and the tools change.")
+st.dataframe(pd.DataFrame([
+    ("Data", "Servicing exports -> Bronze / Silver / Gold", "Tax bills and jurisdiction deadlines",
+     "Invoices and payment status"),
+    ("Rules (SQL)", "Milestone overdue, missing follow-up, next milestone", "Deadline and auction proximity, risk",
+     "New, paid, or ready for processing"),
+    ("Agent reasoning", "Investigates and drafts the next step", "Prioritizes cases, drafts escalations",
+     "Checks invoices, drafts the submission"),
+    ("Human review", "Specialist edits and confirms", "Specialist confirms the escalation", "Reviewer validates"),
+    ("Action", "Bulk-upload file to the servicing system", "Follow-up task or escalation", "Submission to accounting"),
+], columns=["Layer", "Foreclosure milestones (this demo)", "Tax delinquency", "Invoice processing"]),
+    hide_index=True, use_container_width=True)
 
 st.markdown("### The notebooks")
 links = data.notebook_links()

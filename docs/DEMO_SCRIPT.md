@@ -23,20 +23,21 @@
 | 5 | `05_agent_tools` | Two or three `CREATE FUNCTION` cells | **This is where the agent's tools are defined**: governed SQL functions whose comments tell the model when to use them. |
 | 6 | `06_build_and_deploy_agent` | The agent cell, the test output, `log_model`, `agents.deploy` | **This is the whole agent**: about 100 lines. Test it, register it in Unity Catalog, deploy it with one call. |
 | 7 | `07_ai_functions` | The `ai_query` cell and results | Batch AI in SQL: summaries for every priority loan. |
-| 8 | `08_agent_reviews` | Tool chain printed, reviews table | Batch agent: it investigates the top of the queue before anyone logs in. |
+| 8 | `08_agent_reviews` | Tool chain printed, drafts table | Batch agent: it drafts the next step for the top of the queue before anyone logs in. |
 | 9 | Workflow run | `generate -> bronze -> silver -> gold -> ai_functions -> agent_reviews` | All of it runs as one serverless workflow on a schedule. |
 
 ## Part B - the app (the on-demand side)
 
 | # | Page | Show | Say |
 |---|------|------|-----|
-| 10 | Portfolio | Briefing, AI summary and Agent review columns | The batch side's results, ready for specialists. |
-| 11 | Loan `LSI-SYN-000007` | Backend AI, then the rule facts with rule IDs | What the backend concluded, and the deterministic facts behind it. |
-| 12 | Loan - **Run AI analysis now** | Live tool chain | The on-demand side: the same agent, live. |
-| 13 | Loan - custom instruction "Draft an email to the assigned attorney" | The email in the answer | Steer the agent per request without redeploying. |
-| 14 | Loan - **Next step** | Create Next Milestone preselected; edit the date; Confirm and schedule | The agent recommends, a person decides. The timeline shows it as scheduled; the next workflow run verifies it landed. |
-| 15 | Databricks - Traces and notebook `09_monitor_agent` | The trace for the analysis you just ran | MLflow 3 traces every request in real time; LLM judges score them. |
-| 16 | The Agent | Tool catalog, links to Serving, Playground, Unity Catalog | Governed tools, registered model, traces. |
+| 10 | Portfolio | Briefing, AI summary and Agent draft columns | The overnight side: the queue arrives with next steps already drafted. |
+| 11 | Loan `LSI-SYN-000005` | Rule facts with rule IDs, the overnight draft | Title Review 18 days overdue; the agent already drafted the follow-up. |
+| 12 | Loan - paste the attorney update (placeholder text), click **Re-plan with the agent** | Live tool chain, new draft | The on-demand side: something changed, and the same agent re-plans live, inside the workflow. |
+| 13 | Loan - optional custom instruction "Draft an email to the assigned attorney" | Outreach in the draft | Steer the agent per request without redeploying. |
+| 14 | Loan - edit the date, **Confirm and schedule** | Toast, timeline shows Scheduled | A person decides. The action leaves as a bulk-upload file in the `outbound` volume - no browser automation - and the next workflow run verifies it landed. |
+| 15 | Loan `LSI-SYN-000007` - **Have the agent propose the next step** | Create Next Milestone drafted | A loan the overnight run did not cover: the agent drafts on demand. |
+| 16 | Databricks - Traces | The traces for the drafts you just made | MLflow 3 traces every request in real time; LLM judges score them (notebook 09). |
+| 17 | How It Works - One framework | The framework table | Foreclosure milestones first; tax delinquency and invoice processing reuse the same five layers. |
 
 ## Fallbacks
 

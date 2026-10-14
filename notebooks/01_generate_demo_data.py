@@ -14,6 +14,7 @@ catalog, schema = dbutils.widgets.get("catalog"), dbutils.widgets.get("schema")
 
 spark.sql(f"CREATE SCHEMA IF NOT EXISTS {catalog}.{schema}")
 spark.sql(f"CREATE VOLUME IF NOT EXISTS {catalog}.{schema}.landing")
+spark.sql(f"CREATE VOLUME IF NOT EXISTS {catalog}.{schema}.outbound")   # bulk-upload files from the app
 spark.sql(f"USE {catalog}.{schema}")
 landing = f"/Volumes/{catalog}/{schema}/landing/current"
 
@@ -41,8 +42,9 @@ display(dbutils.fs.ls(landing))
 
 # MAGIC %md
 # MAGIC ## 2. Where the app writes back
-# MAGIC When a specialist confirms an action in the app, the app records it in `app_actions` and the servicing
-# MAGIC system's new event in `servicing_system_events`. The next pipeline run picks that event up and verifies it.
+# MAGIC When a specialist confirms an action in the app, the app records it in `app_actions` and writes a
+# MAGIC **bulk-upload file** for the servicing system to the `outbound` volume (no browser automation). The import is
+# MAGIC simulated in `servicing_system_events`; the next pipeline run picks that event up and verifies it.
 
 # COMMAND ----------
 

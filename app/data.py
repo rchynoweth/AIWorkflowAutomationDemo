@@ -5,8 +5,11 @@ and on-demand analysis from the deployed Loan Servicing Agent (notebook 06).
 """
 from __future__ import annotations
 
+import csv
+import io
 import json
 import os
+import re
 import time
 import uuid
 from datetime import date, datetime, timedelta
@@ -137,8 +140,8 @@ def backend_ai() -> dict:
         out["insights"] = {r["loan_id"]: r for r in sql(
             f"SELECT loan_id, ai_summary, model_endpoint, generated_at FROM {table('gold_ai_loan_insights')}")}
         out["reviews"] = {r["loan_id"]: r for r in sql(
-            f"SELECT loan_id, review, recommended_action, tools_called, tool_call_count, generated_at "
-            f"FROM {table('gold_agent_loan_reviews')}")}
+            f"SELECT loan_id, review, recommended_action, proposed_followup_date, proposed_note, proposed_outreach, "
+            f"tools_called, tool_call_count, generated_at FROM {table('gold_agent_loan_reviews')}")}
         briefing = sql(f"SELECT briefing, model_endpoint, generated_at FROM {table('gold_ai_portfolio_briefing')}")
         out["briefing"] = briefing[0] if briefing else None
     except RuntimeError:  # the workflow has not run yet
@@ -194,11 +197,54 @@ def schedule(state: dict, action: str, followup_date: date, note: str, outreach:
                   user=st.context.headers.get("X-Forwarded-Email", "app user"))
     sql(f"""INSERT INTO {table('app_actions')} VALUES (:action_id, :loan_id, :action_type, :event_type,
             :milestone_type, CAST(:followup_date AS DATE), :note, :outreach, :user, current_timestamp())""", **params)
+    write_bulk_upload(params)
     sql(f"""INSERT INTO {table('servicing_system_events')} VALUES (:event_id, :loan_id, :event_type, :milestone_type,
             current_date(), CAST(:followup_date AS DATE), 'OPEN', concat(:note, ' [ref ', :action_id, ']'),
             'SERVICING_SYSTEM_ADAPTER', current_timestamp())""", **params)
     st.cache_data.clear()
     return action_id
+
+
+def write_bulk_upload(params: dict) -> str:
+    """Write the confirmed action as a servicing-system bulk-upload file in a Unity Catalog volume.
+
+    Bulk-upload templates are how the action reaches the servicing system - no browser automation. Here we also
+    simulate the import (servicing_system_events) so the next pipeline run can verify it.
+    """
+    buffer = io.StringIO()
+    writer = csv.writer(buffer)
+    writer.writerow(["loan_id", "event_type", "milestone_type", "event_date", "followup_date", "note", "reference"])
+    writer.writerow([params["loan_id"], params["event_type"], params["milestone_type"] or "", date.today().isoformat(),
+                     params["followup_date"], params["note"], params["action_id"]])
+    path = f"/Volumes/{CATALOG}/{SCHEMA}/outbound/bulk_upload_{date.today():%Y%m%d}_{params['action_id']}.csv"
+    client().files.upload(path, io.BytesIO(buffer.getvalue().encode("utf-8")), overwrite=True)
+    return path
+
+
+PROPOSE_PROMPT = """Propose the next servicing step for loan {loan_id}. Today is {today}.
+Use your tools: check the current milestone and follow-up status, the allowed actions, pending actions, and prior
+rejections.{new_info}
+Reply with 2 to 4 short bullets explaining why, then exactly one JSON block:
+```json
+{{"action": "<one of the allowed actions>", "followup_date": "YYYY-MM-DD", "note": "<one-sentence servicing note>",
+ "outreach": "<short email to the assigned attorney or vendor for CONTACT actions, otherwise empty>"}}
+```"""
+
+
+def propose_next_step(loan_id: str, new_info: str = "", instructions: str = "") -> dict:
+    """The agent investigates the loan live and drafts the next step. Returns its reasons, the draft, and its tools."""
+    news = f"\nNew information from the servicing team - take it into account: {new_info}" if new_info else ""
+    result = ask_agent([{"role": "user", "content": PROPOSE_PROMPT.format(
+        loan_id=loan_id, today=date.today(), new_info=news)}], instructions)
+    match = re.search(r"```json\s*(\{.*?\})\s*```", result["answer"], re.S)
+    draft = {}
+    if match:
+        try:
+            draft = json.loads(match.group(1))
+            result["answer"] = result["answer"][:match.start()].strip()
+        except ValueError:
+            pass
+    return {**result, "draft": draft}
 
 
 # ---- The deployed agent ---------------------------------------------------------------------------------------

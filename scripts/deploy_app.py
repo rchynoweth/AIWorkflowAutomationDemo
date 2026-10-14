@@ -76,7 +76,7 @@ def main() -> None:
     print(f"Granting Unity Catalog privileges to app service principal {sp}")
     run_sql(w, args.warehouse_id, f"GRANT USE CATALOG ON CATALOG `{args.catalog}` TO `{sp}`")
     run_sql(w, args.warehouse_id,
-            f"GRANT USE SCHEMA, SELECT, MODIFY, CREATE TABLE, EXECUTE ON SCHEMA `{args.catalog}`.`{args.schema}` "
+            f"GRANT USE SCHEMA, SELECT, MODIFY, CREATE TABLE, EXECUTE, READ VOLUME, WRITE VOLUME ON SCHEMA `{args.catalog}`.`{args.schema}` "
             f"TO `{sp}`")
 
     try:  # lets the app link to its Git folder in the resource inventory

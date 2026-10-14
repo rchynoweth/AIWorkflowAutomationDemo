@@ -1,22 +1,21 @@
 # Databricks notebook source
 # MAGIC %md
-# MAGIC # 08 · Agent reviews: the Loan Servicing Agent investigates the queue
+# MAGIC # 08 · Agent drafts: the Loan Servicing Agent proposes next steps for the queue
 # MAGIC
-# MAGIC > Input data is **synthetic**. The reviews are **real**: produced by the deployed Loan Servicing Agent.
+# MAGIC > Input data is **synthetic**. The drafts are **real**: produced by the deployed Loan Servicing Agent.
 # MAGIC
-# MAGIC The agent is deployed on **Model Serving** (`loan-servicing-agent`) and registered in **Unity Catalog**.
-# MAGIC It decides for itself which of its **Unity Catalog tool functions** to call (loan context, milestone,
-# MAGIC follow-ups, pending actions, prior rejections, score, allowed actions), then writes a review.
+# MAGIC Overnight, the agent works the top of the queue the way a specialist would: it investigates each loan with its
+# MAGIC **Unity Catalog tools** (milestone, follow-ups, allowed actions, pending work, prior rejections) and drafts the
+# MAGIC **next step** - an allowed action, a follow-up date, a servicing note, and outreach if needed.
 # MAGIC
-# MAGIC This notebook sends the top of the work queue to the agent and stores each review in
-# MAGIC `gold_agent_loan_reviews`, so specialists open the app to find the investigation already done.
-# MAGIC The agent is read-only: it recommends; a person decides.
+# MAGIC The drafts land in `gold_agent_loan_reviews`, so the morning starts with work already prepared. The agent never
+# MAGIC acts: a specialist reviews, edits, and confirms each draft in the app.
 
 # COMMAND ----------
 
 dbutils.widgets.text("catalog", "main", "Catalog")
 dbutils.widgets.text("schema", "loan_servicing_intelligence", "Schema")
-dbutils.widgets.text("loans_to_review", "8", "Loans to review")
+dbutils.widgets.text("loans_to_review", "25", "Loans to draft")
 dbutils.widgets.text("instructions", "", "Custom instructions for the agent (optional)")
 spark.sql(f"USE CATALOG `{dbutils.widgets.get('catalog')}`")
 spark.sql(f"USE SCHEMA `{dbutils.widgets.get('schema')}`")
@@ -74,7 +73,7 @@ print(example["answer"])
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 2. Review the top of the work queue
+# MAGIC ## 2. Draft the next step for the top of the work queue
 
 # COMMAND ----------
 
@@ -89,28 +88,48 @@ queue = spark.sql(f"""
     LIMIT {limit}
 """).collect()
 
-PROMPT = ("Review loan {loan_id}. Using your tools, explain in 3 to 5 short bullets why it needs attention and "
-          "what has already happened. End with exactly one line: 'Recommended action: <ACTION>' choosing an "
-          "action returned by lsi_get_allowed_actions.")
+import json
+from datetime import date
+
+PROMPT = """Propose the next servicing step for loan {loan_id}. Today is {today}.
+Use your tools: check the current milestone and follow-up status, the allowed actions, pending actions, and prior
+rejections.
+Reply with 2 to 4 short bullets explaining why, then exactly one JSON block:
+```json
+{{"action": "<one of the allowed actions>", "followup_date": "YYYY-MM-DD", "note": "<one-sentence servicing note>",
+ "outreach": "<short email to the assigned attorney or vendor for CONTACT actions, otherwise empty>"}}
+```"""
 
 
-def review(row) -> dict | None:
+def parse_draft(answer: str) -> tuple[str, dict]:
+    """Split the agent's answer into its explanation and the JSON draft."""
+    match = re.search(r"```json\s*(\{.*?\})\s*```", answer, re.S)
+    if not match:
+        return answer, {}
     try:
-        result = ask_agent(PROMPT.format(loan_id=row.loan_id), INSTRUCTIONS)
+        return answer[:match.start()].strip(), json.loads(match.group(1))
+    except ValueError:
+        return answer, {}
+
+
+def draft(row) -> dict | None:
+    try:
+        result = ask_agent(PROMPT.format(loan_id=row.loan_id, today=date.today()), INSTRUCTIONS)
     except Exception as exc:  # one failed loan should not stop the batch
         print(f"{row.loan_id}: agent call failed ({str(exc)[:120]})")
         return None
-    match = re.search(r"Recommended action:\s*\**([A-Z_]+)", result["answer"])
+    why, proposal = parse_draft(result["answer"])
     return {"loan_id": row.loan_id, "priority": row.priority, "primary_condition": row.primary_condition,
-            "attention_score": row.attention_score, "review": result["answer"],
-            "recommended_action": match.group(1) if match else None,
+            "attention_score": row.attention_score, "review": why,
+            "recommended_action": proposal.get("action", ""), "proposed_followup_date": proposal.get("followup_date", ""),
+            "proposed_note": proposal.get("note", ""), "proposed_outreach": proposal.get("outreach", ""),
             "tools_called": " -> ".join(result["tools"]), "tool_call_count": len(result["tools"]),
             "seconds": result["seconds"], "agent_endpoint": AGENT_ENDPOINT}
 
 
 with ThreadPoolExecutor(max_workers=4) as pool:
-    reviews = [r for r in pool.map(review, queue) if r]
-print(f"Agent reviewed {len(reviews)} of {len(queue)} loans")
+    reviews = [r for r in pool.map(draft, queue) if r]
+print(f"Agent drafted next steps for {len(reviews)} of {len(queue)} loans")
 
 # Fail loudly if the agent could not use its tools (for example, missing permissions) rather than saving
 # empty reviews.
@@ -122,7 +141,7 @@ if broken or not reviews:
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## 3. Save the reviews to Gold for the app
+# MAGIC ## 3. Save the drafts to Gold for the app
 
 # COMMAND ----------
 
@@ -133,6 +152,7 @@ from pyspark.sql import functions as F
  .write.mode("overwrite").option("overwriteSchema", "true")
  .saveAsTable("gold_agent_loan_reviews"))
 spark.sql("COMMENT ON TABLE gold_agent_loan_reviews IS "
-          "'Loan reviews written by the deployed Loan Servicing Agent - SYNTHETIC DEMONSTRATION DATA'")
+          "'Next-step drafts written by the deployed Loan Servicing Agent - SYNTHETIC DEMONSTRATION DATA'")
 display(spark.table("gold_agent_loan_reviews")
-        .select("loan_id", "priority", "recommended_action", "tool_call_count", "tools_called", "review"))
+        .select("loan_id", "priority", "recommended_action", "proposed_followup_date", "proposed_note",
+                "tool_call_count", "review"))

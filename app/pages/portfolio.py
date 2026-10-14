@@ -16,7 +16,8 @@ cols[0].markdown(ui.card("Active loans", f"{len(loans):,}"), unsafe_allow_html=T
 cols[1].markdown(ui.card("Need attention", f"{sum(r['priority'] in ('CRITICAL', 'HIGH') for r in loans):,}", "#B54708"),
                  unsafe_allow_html=True)
 cols[2].markdown(ui.card("AI summaries", f"{len(ai['insights']):,}", "#6941C6"), unsafe_allow_html=True)
-cols[3].markdown(ui.card("Reviewed by the agent", f"{len(ai['reviews']):,}", "#6941C6"), unsafe_allow_html=True)
+cols[3].markdown(ui.card("Next steps drafted by the agent", f"{len(ai['reviews']):,}", "#6941C6"),
+                 unsafe_allow_html=True)
 st.write("")
 
 if ai["briefing"]:

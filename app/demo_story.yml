@@ -4,17 +4,17 @@
 portfolio:
   story:
     - "Every active loan is evaluated every cycle - nobody searches for work. The purple text was written by AI before anyone opened the app."
-    - "Agent review shows loans the agent already investigated, with its recommended action."
+    - "Agent draft shows the next steps the agent prepared overnight - the morning starts with work ready to confirm."
   databricks:
     - "The summaries come from AI Functions (ai_query in a SQL notebook) and the reviews from the deployed agent - both in one serverless Databricks Workflow."
     - "The app only reads Gold tables in Unity Catalog through a serverless SQL warehouse."
 loan:
   story:
-    - "Top: what the AI backend already concluded. Below it: the deterministic rule facts, each with its rule ID."
-    - "Run AI analysis now: the agent investigates live and shows every tool it chose. Add custom instructions - for example draft an email - to steer it."
-    - "Next step: the agent recommends, a person edits and confirms. The next workflow run verifies it landed in the servicing system."
+    - "The rule facts say what is wrong, with rule IDs. The agent's job is to get the work moving."
+    - "The agent already drafted a next step overnight. Paste what just changed - an attorney's email - and click Re-plan: it investigates live and re-drafts the action, date, note, and outreach."
+    - "You edit and confirm. It goes to the servicing system as a bulk-upload file, and the next workflow run verifies it landed."
   databricks:
-    - "The rules are SQL in notebook 04. The on-demand call goes to the agent on Model Serving; its tools are Unity Catalog functions; every call is traced in MLflow."
+    - "Rules are SQL in notebook 04. The live draft comes from the agent on Model Serving; its tools are Unity Catalog functions, the rules still have the last word, and every call is traced in MLflow."
 agent:
   story:
     - "Ask a loan question and watch the agent pick its own tools, then show the tool catalog."
