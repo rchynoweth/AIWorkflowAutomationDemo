@@ -9,8 +9,9 @@
 
 dbutils.widgets.text("catalog", "main")
 dbutils.widgets.text("schema", "loan_servicing_intelligence")
-spark.sql(f"USE {dbutils.widgets.get('catalog')}.{dbutils.widgets.get('schema')}")
-landing = f"/Volumes/{dbutils.widgets.get('catalog')}/{dbutils.widgets.get('schema')}/landing/current"
+catalog, schema = dbutils.widgets.get("catalog"), dbutils.widgets.get("schema")
+spark.sql(f"USE {catalog}.{schema}")
+landing = f"/Volumes/{catalog}/{schema}/landing/current"
 
 # COMMAND ----------
 

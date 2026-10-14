@@ -29,9 +29,10 @@ spark.sql(f"USE SCHEMA `{dbutils.widgets.get('schema')}`")
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC SELECT queue_rank, priority, loan_id, primary_condition, attention_score, top_drivers_text, why_prioritized
-# MAGIC FROM gold_priority_queue
-# MAGIC ORDER BY CAST(queue_rank AS INT)
+# MAGIC SELECT queue_rank, priority, loan_id, primary_condition, attention_score, top_drivers
+# MAGIC FROM gold_loan_state
+# MAGIC WHERE is_active
+# MAGIC ORDER BY queue_rank
 # MAGIC LIMIT 10
 
 # COMMAND ----------
@@ -49,21 +50,21 @@ spark.sql(f"USE SCHEMA `{dbutils.widgets.get('schema')}`")
 # MAGIC   loan_id,
 # MAGIC   priority,
 # MAGIC   primary_condition,
-# MAGIC   CAST(attention_score AS INT) AS attention_score,
+# MAGIC   attention_score,
 # MAGIC   ai_query(
 # MAGIC     'databricks-claude-sonnet-4-5',
 # MAGIC     CONCAT(
 # MAGIC       'You summarize SYNTHETIC loan-servicing data for a servicing specialist. In one sentence of at most ',
 # MAGIC       '30 words, state why this loan needs attention and which servicing follow-up to check first. ',
 # MAGIC       'Use only these facts. No legal or financial advice. Facts: ',
-# MAGIC       why_prioritized, ' | Score drivers: ', top_drivers_text,
-# MAGIC       ' | Milestone: ', COALESCE(current_milestone, 'none'))
+# MAGIC       to_json(transform(conditions, c -> c.detail)), ' | Score drivers: ', top_drivers,
+# MAGIC       ' | Milestone: ', coalesce(current_milestone, 'none'), ' | Allowed actions: ', array_join(allowed_actions, ', '))
 # MAGIC   ) AS ai_summary,
 # MAGIC   'databricks-claude-sonnet-4-5' AS model_endpoint,
 # MAGIC   current_timestamp() AS generated_at
-# MAGIC FROM gold_priority_queue
+# MAGIC FROM gold_loan_state
 # MAGIC WHERE priority IN ('CRITICAL', 'HIGH')
-# MAGIC ORDER BY CAST(queue_rank AS INT)
+# MAGIC ORDER BY queue_rank
 # MAGIC LIMIT 25
 
 # COMMAND ----------
@@ -77,7 +78,7 @@ spark.sql(f"USE SCHEMA `{dbutils.widgets.get('schema')}`")
 
 # MAGIC %md
 # MAGIC ## 3. A portfolio briefing written from the deterministic facts
-# MAGIC The facts table is collapsed to JSON and handed to the model in a single `ai_query` call.
+# MAGIC The portfolio is summarized in SQL, collapsed to JSON, and handed to the model in a single `ai_query` call.
 
 # COMMAND ----------
 
@@ -94,9 +95,14 @@ spark.sql(f"USE SCHEMA `{dbutils.widgets.get('schema')}`")
 # MAGIC   'databricks-claude-sonnet-4-5' AS model_endpoint,
 # MAGIC   current_timestamp() AS generated_at
 # MAGIC FROM (
-# MAGIC   SELECT to_json(collect_list(named_struct('group', fact_group, 'name', fact_name, 'value', fact_value))) AS facts_json
-# MAGIC   FROM gold_portfolio_briefing_facts
-# MAGIC   WHERE fact_name <> 'processing_date'   -- the app shows today's date itself
+# MAGIC   SELECT to_json(collect_list(named_struct('priority', priority, 'condition', primary_condition, 'loans', loans,
+# MAGIC                                            'balance', balance))) AS facts_json
+# MAGIC   FROM (
+# MAGIC     SELECT priority, primary_condition, count(*) AS loans, round(sum(current_balance)) AS balance
+# MAGIC     FROM gold_loan_state
+# MAGIC     WHERE is_active AND primary_condition <> 'NO_ACTION'
+# MAGIC     GROUP BY priority, primary_condition
+# MAGIC   )
 # MAGIC )
 
 # COMMAND ----------

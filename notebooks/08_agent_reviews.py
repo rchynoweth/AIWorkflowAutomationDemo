@@ -6,7 +6,7 @@
 # MAGIC
 # MAGIC The agent is deployed on **Model Serving** (`loan-servicing-agent`) and registered in **Unity Catalog**.
 # MAGIC It decides for itself which of its **Unity Catalog tool functions** to call (loan context, milestone,
-# MAGIC follow-ups, pending actions, prior rejections, escalation, score, allowed actions), then writes a review.
+# MAGIC follow-ups, pending actions, prior rejections, score, allowed actions), then writes a review.
 # MAGIC
 # MAGIC This notebook sends the top of the work queue to the agent and stores each review in
 # MAGIC `gold_agent_loan_reviews`, so specialists open the app to find the investigation already done.
@@ -82,10 +82,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 limit = int(dbutils.widgets.get("loans_to_review"))
 queue = spark.sql(f"""
-    SELECT loan_id, priority, primary_condition, CAST(attention_score AS INT) AS attention_score
-    FROM gold_priority_queue
+    SELECT loan_id, priority, primary_condition, attention_score
+    FROM gold_loan_state
     WHERE priority IN ('CRITICAL', 'HIGH')
-    ORDER BY CAST(queue_rank AS INT)
+    ORDER BY queue_rank
     LIMIT {limit}
 """).collect()
 

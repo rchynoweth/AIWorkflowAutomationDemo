@@ -1,9 +1,0 @@
-specialist_id,display_name,team,active,synthetic_data
-SPEC-01,Synthetic Specialist 01,Synthetic Team A,true,true
-SPEC-02,Synthetic Specialist 02,Synthetic Team A,true,true
-SPEC-03,Synthetic Specialist 03,Synthetic Team A,true,true
-SPEC-04,Synthetic Specialist 04,Synthetic Team B,true,true
-SPEC-05,Synthetic Specialist 05,Synthetic Team B,true,true
-SPEC-06,Synthetic Specialist 06,Synthetic Team C,true,true
-SPEC-07,Synthetic Specialist 07,Synthetic Team C,true,true
-SPEC-08,Synthetic Specialist 08,Synthetic Team C,false,true

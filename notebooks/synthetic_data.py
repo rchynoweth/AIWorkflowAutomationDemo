@@ -1,15 +1,18 @@
-"""Deterministic synthetic loan-servicing exports (SYNTHETIC DEMONSTRATION DATA)."""
+"""Synthetic loan-servicing exports for the demo (SYNTHETIC DEMONSTRATION DATA).
+
+Used by notebook 01. Dates are relative to the processing date (today by default), so the same loans are
+overdue, due, or upcoming every day the demo runs. A fixed seed makes every run identical.
+"""
 from __future__ import annotations
 
-import argparse
 import random
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from pathlib import Path
 
 import pandas as pd
 
-from src.config import get_settings
+SEED = 20261012
+LOAN_COUNT = 1500
 
 
 # ====================================================================================================
@@ -140,10 +143,6 @@ DECISION_COLUMNS = [
     "final_action", "original_followup_date", "final_followup_date", "original_note", "final_note", "reason",
     "decided_at", "synthetic_data",
 ]
-MANIFEST_COLUMNS = [
-    "scenario_id", "loan_id", "scenario_type", "expected_condition", "expected_priority", "expected_action",
-    "expected_verification_status", "description",
-]
 
 ACTION_EVENT_TYPE = {
     "CREATE_FOLLOWUP": "FOLLOWUP",
@@ -208,7 +207,6 @@ class GeneratedDataset:
     attorneys_vendors: pd.DataFrame
     servicing_action_history: pd.DataFrame
     reviewer_decisions: pd.DataFrame
-    demo_scenario_manifest: pd.DataFrame
 
     def tables(self) -> dict[str, pd.DataFrame]:
         return {
@@ -219,7 +217,6 @@ class GeneratedDataset:
             "attorneys_vendors": self.attorneys_vendors,
             "servicing_action_history": self.servicing_action_history,
             "reviewer_decisions": self.reviewer_decisions,
-            "demo_scenario_manifest": self.demo_scenario_manifest,
         }
 
 
@@ -589,10 +586,6 @@ class _Builder:
 
     # ---- assembly --------------------------------------------------------------------
     def frames(self) -> GeneratedDataset:
-        manifest = [
-            dict(zip(MANIFEST_COLUMNS, (sid, loan_id_for(idx), stype, cond, prio, act, ver, desc)))
-            for sid, idx, stype, cond, prio, act, ver, desc in SCENARIOS
-        ]
         rules = [dict(zip(MILESTONE_COLUMNS, r)) for r in MILESTONE_RULES]
         for r in rules:
             r["next_milestone_type"] = r["next_milestone_type"] or ""
@@ -611,46 +604,12 @@ class _Builder:
                   "synthetic_data": "true"} for p, n, t, s, a in PARTIES]),
             servicing_action_history=pd.DataFrame(self.actions, columns=ACTION_COLUMNS),
             reviewer_decisions=pd.DataFrame(self.decisions, columns=DECISION_COLUMNS),
-            demo_scenario_manifest=pd.DataFrame(manifest, columns=MANIFEST_COLUMNS),
         )
 
 
-def generate_dataset(seed: int | None = None, processing_date: date | None = None,
-                     loan_count: int | None = None) -> GeneratedDataset:
-    """Generate the full synthetic dataset deterministically."""
-    settings = get_settings()
-    builder = _Builder(seed if seed is not None else settings.seed, processing_date or settings.processing_date)
+def generate_dataset(processing_date: date | None = None, loan_count: int = LOAN_COUNT) -> GeneratedDataset:
+    """The full synthetic dataset: 20 hand-built demo scenarios plus a background portfolio."""
+    builder = _Builder(SEED, processing_date or date.today())
     builder.build_scenarios()
-    builder.build_background(SCENARIO_COUNT + 1, loan_count or settings.loan_count)
+    builder.build_background(SCENARIO_COUNT + 1, loan_count)
     return builder.frames()
-
-
-def write_dataset(dataset: GeneratedDataset, out_dir: str | Path) -> dict[str, Path]:
-    out = Path(out_dir)
-    out.mkdir(parents=True, exist_ok=True)
-    paths = {}
-    for name, frame in dataset.tables().items():
-        path = out / f"{name}.csv"
-        frame.to_csv(path, index=False)
-        paths[name] = path
-    return paths
-
-
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Generate synthetic loan-servicing exports.")
-    parser.add_argument("--out", default=None, help="Output directory (default: config data.generated_dir)")
-    parser.add_argument("--seed", type=int, default=None)
-    parser.add_argument("--processing-date", default=None)
-    args = parser.parse_args()
-    settings = get_settings()
-    dataset = generate_dataset(
-        seed=args.seed,
-        processing_date=date.fromisoformat(args.processing_date) if args.processing_date else None,
-    )
-    paths = write_dataset(dataset, args.out or settings.path("generated_dir"))
-    for name, path in paths.items():
-        print(f"{name:28s} {len(dataset.tables()[name]):>7,d} rows -> {path}")
-
-
-if __name__ == "__main__":
-    main()

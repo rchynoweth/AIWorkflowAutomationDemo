@@ -92,6 +92,10 @@ spark.sql(f"USE {dbutils.widgets.get('catalog')}.{dbutils.widgets.get('schema')}
 # MAGIC     upper(status) AS status, event_note, upper(source) AS source,
 # MAGIC     to_timestamp(created_at) AS created_at, to_timestamp(updated_at) AS updated_at
 # MAGIC   FROM bronze_loan_events
+# MAGIC   UNION ALL   -- plus the events the servicing system created for actions confirmed in the app
+# MAGIC   SELECT event_id, loan_id, event_type, milestone_type, event_date, followup_date, CAST(NULL AS DATE), status, event_note,
+# MAGIC          source, created_at, created_at
+# MAGIC   FROM servicing_system_events
 # MAGIC ),
 # MAGIC latest AS (   -- keep the most recent version of each event
 # MAGIC   SELECT * FROM typed QUALIFY row_number() OVER (PARTITION BY event_id ORDER BY updated_at DESC) = 1

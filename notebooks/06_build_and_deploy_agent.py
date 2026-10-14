@@ -218,10 +218,8 @@ print(email.output[-1].content[0]["text"])
 from mlflow.models.resources import (DatabricksFunction, DatabricksServingEndpoint, DatabricksSQLWarehouse,
                                      DatabricksTable)
 
-TABLES = ["gold_loan_servicing_state", "gold_loan_milestone_state", "gold_priority_queue", "gold_portfolio_health",
-          "gold_pending_actions", "gold_action_verification", "gold_ai_loan_insights", "gold_reviewer_decisions",
-          "silver_loan_events", "silver_milestone_rules", "silver_reviewer_decisions", "ops_actions",
-          "ops_recommendations", "ops_reviewer_decisions", "v_lsi_specialist_workload", "v_lsi_verification_failures"]
+TABLES = ["gold_loan_state", "gold_action_verification", "gold_ai_loan_insights", "silver_loan_events",
+          "silver_milestone_rules", "silver_reviewer_decisions", "app_actions"]
 
 resources = ([DatabricksServingEndpoint(endpoint_name=AGENT_CONFIG["llm_endpoint"]),
               DatabricksSQLWarehouse(warehouse_id=AGENT_CONFIG["warehouse_id"])]

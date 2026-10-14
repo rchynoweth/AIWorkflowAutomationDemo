@@ -1,0 +1,27 @@
+# Presenter talk track, shown on each page while "Presenter notes" is on (sidebar).
+# "story" is the servicing use case; "databricks" is the platform capability. Edit freely.
+
+portfolio:
+  story:
+    - "Every active loan is evaluated every cycle - nobody searches for work. The purple text was written by AI before anyone opened the app."
+    - "Agent review shows loans the agent already investigated, with its recommended action."
+  databricks:
+    - "The summaries come from AI Functions (ai_query in a SQL notebook) and the reviews from the deployed agent - both in one serverless Databricks Workflow."
+    - "The app only reads Gold tables in Unity Catalog through a serverless SQL warehouse."
+loan:
+  story:
+    - "Top: what the AI backend already concluded. Below it: the deterministic rule facts, each with its rule ID."
+    - "Run AI analysis now: the agent investigates live and shows every tool it chose. Add custom instructions - for example draft an email - to steer it."
+    - "Next step: the agent recommends, a person edits and confirms. The next workflow run verifies it landed in the servicing system."
+  databricks:
+    - "The rules are SQL in notebook 04. The on-demand call goes to the agent on Model Serving; its tools are Unity Catalog functions; every call is traced in MLflow."
+agent:
+  story:
+    - "Ask a loan question and watch the agent pick its own tools, then show the tool catalog."
+  databricks:
+    - "Built in one notebook with the Mosaic AI Agent Framework, registered in Unity Catalog, served on Model Serving with scale-to-zero; tools are governed SQL functions."
+how_it_works:
+  story:
+    - "Databricks is the backend: one workflow builds the facts, the AI, and the agent reviews. The app is a thin window."
+  databricks:
+    - "Open the notebooks from the table - 04 for the rules, 05 for the tools, 06 for the agent, 07 and 08 for batch AI."

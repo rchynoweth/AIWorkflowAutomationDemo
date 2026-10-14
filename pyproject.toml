@@ -1,37 +1,9 @@
-[build-system]
-requires = ["setuptools>=68"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "loan-servicing-intelligence"
-version = "0.1.0"
-description = "Loan Servicing Intelligence: agent-powered portfolio monitoring and loan-servicing workflow automation (synthetic demonstration)."
-readme = "README.md"
+version = "0.2.0"
+description = "Loan Servicing Intelligence: an agent-powered loan-servicing demo on Databricks (synthetic data)."
 requires-python = ">=3.10"
-license = { file = "LICENSE" }
-dependencies = [
-  "pandas>=2.0",
-  "pyyaml>=6.0",
-  "pydantic>=2.5",
-  "fastapi>=0.110",
-  "uvicorn>=0.27",
-  "httpx>=0.27",
-  "streamlit>=1.40",
-]
-
-[project.optional-dependencies]
-databricks = ["databricks-sdk>=0.40"]
-tracing = ["mlflow-skinny>=2.17"]
-dev = ["pytest>=8.0"]
-
-[tool.setuptools.packages.find]
-include = ["src*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
-markers = [
-  "integration: multi-module tests over generated synthetic data",
-  "end_to_end: full workflow loop tests",
-  "databricks: tests that require a live Databricks workspace (skipped by default)",
-]

@@ -2,10 +2,10 @@
 
 Usage:
   python scripts/deploy_app.py --repo-path /Workspace/Users/<you>/AIWorkflowAutomationDemo --warehouse-id <id> \
-      [--catalog main] [--schema loan_servicing_intelligence] [--endpoint databricks-claude-sonnet-5-5] \
+      [--catalog main] [--schema loan_servicing_intelligence] \
       [--keep-running]
 
-Steps: create app with SQL-warehouse (CAN_USE) and serving-endpoint (CAN_QUERY) resources; grant the app
+Steps: create the app with the SQL warehouse (CAN_USE) and agent endpoint (CAN_QUERY) as resources; grant the app
 service principal least-privilege Unity Catalog access to one schema; deploy; stop the app unless
 --keep-running (Databricks Apps do not auto-suspend).
 """
@@ -36,7 +36,6 @@ def main() -> None:
     parser.add_argument("--warehouse-id", required=True)
     parser.add_argument("--catalog", default="main")
     parser.add_argument("--schema", default="loan_servicing_intelligence")
-    parser.add_argument("--endpoint", default="databricks-claude-sonnet-5-5")
     parser.add_argument("--keep-running", action="store_true")
     args = parser.parse_args()
     w = WorkspaceClient()
@@ -46,29 +45,15 @@ def main() -> None:
                          sql_warehouse=apps.AppResourceSqlWarehouse(
                              id=args.warehouse_id,
                              permission=apps.AppResourceSqlWarehouseSqlWarehousePermission.CAN_USE)),
-        apps.AppResource(name="serving-endpoint", description="Pay-per-token Foundation Model API endpoint",
+        apps.AppResource(name="agent-endpoint", description="Loan Servicing Agent (Model Serving)",
                          serving_endpoint=apps.AppResourceServingEndpoint(
-                             name=args.endpoint,
+                             name="loan-servicing-agent",
                              permission=apps.AppResourceServingEndpointServingEndpointPermission.CAN_QUERY)),
     ]
-    try:
-        w.serving_endpoints.get("loan-servicing-agent")
-        resources.append(apps.AppResource(
-            name="agent-endpoint", description="Deployed Loan Servicing Agent (Model Serving)",
-            serving_endpoint=apps.AppResourceServingEndpoint(
-                name="loan-servicing-agent",
-                permission=apps.AppResourceServingEndpointServingEndpointPermission.CAN_QUERY)))
-    except Exception:  # noqa: BLE001
-        print("NOTE: agent endpoint loan-servicing-agent not deployed yet (notebooks/06_build_and_deploy_agent.py)")
-    for resource_name, job_name, permission in (
-            ("pipeline-job", "lsi-pipeline", apps.AppResourceJobJobPermission.CAN_MANAGE_RUN),):
-        found = list(w.jobs.list(name=job_name))
-        if found:
-            resources.append(apps.AppResource(name=resource_name, description=f"Databricks Workflow {job_name}",
-                                              job=apps.AppResourceJob(id=str(found[0].job_id),
-                                                                      permission=permission)))
-        else:
-            print(f"WARNING: job {job_name} not found; run scripts/create_pipeline_job.py first")
+    for job in w.jobs.list(name="lsi-pipeline"):   # lets How It Works show the last run
+        resources.append(apps.AppResource(name="pipeline-job", description="Databricks Workflow lsi-pipeline",
+                                          job=apps.AppResourceJob(id=str(job.job_id),
+                                                                  permission=apps.AppResourceJobJobPermission.CAN_VIEW)))
     description = ("Loan Servicing Intelligence - agent-powered portfolio monitoring and loan-servicing workflow "
                    "automation (synthetic demonstration data).")
     try:
