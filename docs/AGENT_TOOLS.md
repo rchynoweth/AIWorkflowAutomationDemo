@@ -19,6 +19,33 @@ Unity Catalog SQL functions (`notebooks/05_register_agent_tools.py`, prefix `lsi
 structured tools over Gold tables for SQL clients, Genie, or MCP; the Python implementations remain the
 reference used by the app and tests.
 
+## Unity Catalog toolset of the deployed agent
+
+| Group | Function | Purpose |
+|-------|----------|---------|
+| Loan facts | `lsi_get_loan_context(loan_id)` | Attributes, balances, statuses, assigned parties |
+| Loan facts | `lsi_get_event_history(loan_id)` | Chronological events (no payments) |
+| Loan facts | `lsi_get_current_milestone(loan_id)` | Current milestone (RULE-MILESTONE-001) |
+| Loan facts | `lsi_get_agent_proposals(loan_id)` | Existing proposals and their review status |
+| Loan facts | `lsi_get_ai_loan_insight(loan_id)` | AI Functions summary from the workflow |
+| Rules and scoring | `lsi_check_followup_status(loan_id)` | Effective follow-up, days overdue, conditions, rule IDs |
+| Rules and scoring | `lsi_get_milestone_rule(milestone_type)` | Synthetic milestone rule |
+| Rules and scoring | `lsi_get_escalation_state(loan_id)` | Escalation state, reasons, required role |
+| Rules and scoring | `lsi_get_attention_score(loan_id)` | Score, priority, drivers (report, never recalculate) |
+| Safeguards | `lsi_get_allowed_actions(loan_id)` | Allowed actions, default, removed actions |
+| Safeguards | `lsi_get_open_followups(loan_id)` | Open follow-up events (duplicate risk) |
+| Safeguards | `lsi_check_pending_actions(loan_id)` | Approved/submitted actions awaiting verification |
+| Safeguards | `lsi_check_prior_rejections(loan_id)` | Reviewer rejections |
+| Portfolio | `lsi_priority_queue(max_rows)` | Ranked work queue |
+| Portfolio | `lsi_portfolio_health_summary()` | Health segments |
+| Portfolio | `lsi_specialist_workload()` | Per-specialist workload |
+| Portfolio | `lsi_get_failed_verifications()` | Actions that failed verification |
+
+Registered by `notebooks/05_register_agent_tools.py` or `scripts/register_uc_tools.py` (which also smoke-tests
+each function).
+
+## Python toolset (in-app agent)
+
 ## Loan context and history
 
 | Tool | Input | Output (key fields) | UC function |

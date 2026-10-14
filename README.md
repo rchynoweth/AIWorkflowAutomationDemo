@@ -39,6 +39,10 @@ Synthetic exports -> UC volume -> Bronze -> Silver -> Gold (rules, escalation, s
   -> next refresh -> verification -> verified, or back to the queue
 ```
 
+The **Loan Servicing Agent** is also deployed as a Databricks agent (Mosaic AI Agent Framework): registered in Unity
+Catalog, served on Model Serving, with 17 Unity Catalog SQL functions as its governed tools. The app's *Meet the
+Agent* page shows it live.
+
 An always-on backend workflow (`lsi-servicing-monitor`) re-evaluates the portfolio, verifies actions, runs agent
 triage, and generates AI Functions summaries on a schedule, without anyone opening the app.
 

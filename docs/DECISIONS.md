@@ -99,6 +99,17 @@ Format: identifier, status, date documented, context, options, decision, rationa
 - **Rationale:** Shows Databricks AI Functions directly over governed tables, complementary to the tool-calling agent.
 - **Consequences:** Outputs are informational only (labeled AI-generated); no decision depends on them.
 
+## ADR-016 — Deploy the agent with the Mosaic AI Agent Framework and Unity Catalog tools
+- **Status:** Accepted · **Documented:** 2026-10-13
+- **Context:** The agent ran only as code inside the app and workflow; nothing was visible as an agent in Databricks.
+- **Decision:** Package a read-only MLflow ResponsesAgent whose tools are Unity Catalog SQL functions, register it in
+  Unity Catalog, and deploy it to Model Serving (scale-to-zero) with tracing, review app, and Playground access.
+  The app's *Meet the Agent* page calls this endpoint and shows the tool chain.
+- **Rationale:** Governed, discoverable tools; first-class agent lifecycle (versions, endpoint, traces) on Databricks.
+- **Consequences:** Two agent runtimes share prompts and rules: the deployed read-only agent (UC tools over Gold)
+  and the in-app agent (Python tools over live state) used for recommendations and event drafts. Scale-to-zero
+  means a cold start after idle; warm it before a demo.
+
 ## ADR-013 — Customer-neutrality scanner with external denylist
 - **Status:** Accepted · **Documented:** 2026-10-10
 - **Context:** The repository must be provably customer-neutral without embedding the terms it guards against.

@@ -35,6 +35,26 @@ Framework deployment would wrap the same interface (see `docs/DECISIONS.md` ADR-
 In `auto`, the LLM agent is used and any LLM error falls back to the deterministic agent for that request; the
 fallback is recorded in the trace and the recommendation's `uncertainty`.
 
+## 2a. Deployed Databricks agent (Mosaic AI Agent Framework)
+
+`agent_endpoint/loan_servicing_agent.py` is an MLflow **ResponsesAgent** (models-from-code) deployed by
+`notebooks/11_deploy_agent.py` (`src/agent_deploy.py`):
+
+- **Model:** Claude via the Foundation Model API (`databricks-claude-sonnet-5-5`), tool calling.
+- **Tools:** the 17 Unity Catalog SQL functions `lsi_*` (`src/tools/uc_functions.py`). Tool names, descriptions,
+  and parameter schemas are read from Unity Catalog at start-up; each call executes
+  `SELECT * FROM <function>(...)` on the serverless SQL warehouse.
+- **Registered model:** `main.loan_servicing_intelligence.loan_servicing_agent` (Unity Catalog).
+- **Serving:** endpoint `loan-servicing-agent`, scale-to-zero, with automatic authentication passthrough for the
+  declared resources (LLM endpoint, warehouse, functions, tables), MLflow tracing of every LLM and tool span,
+  review app, and AI Playground access.
+- **Read-only by design:** it investigates and recommends; approval, edits, and scheduling happen in the app.
+- **In the app:** the *Meet the Agent* page shows endpoint status, model version, links, the live tool catalog
+  from Unity Catalog, and a chat that displays each tool call and its rows.
+
+The in-app agent (`ToolCallingLoanServicingAgent`, 29 Python tools) remains the engine for Loan 360 assessments
+and backend triage because it builds validated recommendations and outbound event drafts against live state.
+
 ## 3. Assessment loop (LLM agent)
 
 ```text

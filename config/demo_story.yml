@@ -33,6 +33,18 @@ story:
         - "Agent triage calls Claude through the Foundation Model API using the same tools as the app. The AI insights task uses AI Functions - ai_query directly in SQL - to summarize loans into a Gold table."
         - "Every table is governed in Unity Catalog with lineage from raw file to recommendation."
       click: "Scroll to 'Always-on backend', show the live run status, then open the workflow or the resource inventory links in Databricks."
+    - id: meet_agent
+      title: "Meet the agent"
+      page: agent
+      minutes: 4
+      goal: "Show the deployed agent, its governed tools, and a live tool-calling run."
+      say:
+        - "This is the Loan Servicing Agent. Ask it why a loan is a priority and watch it pick its own tools - milestone, follow-ups, pending actions, prior rejections, score, allowed actions - before it answers."
+        - "It is read-only by design: it investigates and recommends; a specialist approves in the app."
+      databricks:
+        - "Built with the Mosaic AI Agent Framework, registered in Unity Catalog, and served on Model Serving with scale-to-zero."
+        - "Its tools are Unity Catalog SQL functions - governed, permissioned, documented - and every LLM and tool call is traced in MLflow. The same agent is available in the AI Playground."
+      click: "Click the first suggested question, open 'Tool calls and results', then scroll the tool catalog and open one tool in Unity Catalog."
     - id: glance
       title: "The portfolio at a glance"
       page: home
@@ -180,6 +192,11 @@ page_notes:
       - "Two questions: are the rules right (must be 100%), and is the agent helpful (measured over time)?"
     databricks:
       - "Evaluation runs are logged to MLflow."
+  agent:
+    story:
+      - "Ask a loan question and watch the tool chain; then show the tool catalog."
+    databricks:
+      - "Mosaic AI Agent Framework, Unity Catalog functions as tools, Model Serving, MLflow tracing, AI Playground."
   how_it_works:
     story:
       - "Use this page to set the scene, show the always-on backend, and answer architecture questions."

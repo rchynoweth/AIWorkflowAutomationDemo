@@ -17,11 +17,12 @@ REVIEWERS = [
 
 
 def build_pages() -> dict:
-    from app.pages import (agent_activity, evaluation, home, how_it_works, loan_360, portfolio, priority_queue,
-                           story)
+    from app.pages import (agent, agent_activity, evaluation, home, how_it_works, loan_360, portfolio,
+                           priority_queue, story)
 
     PAGES.update({
         "story": st.Page(story.render, title="Demo Story", icon=":material/movie:", url_path="story", default=True),
+        "agent": st.Page(agent.render, title="Meet the Agent", icon=":material/smart_toy:", url_path="agent"),
         "how_it_works": st.Page(how_it_works.render, title="How It Works", icon=":material/schema:",
                                 url_path="how-it-works"),
         "home": st.Page(home.render, title="Home", icon=":material/home:", url_path="home"),
@@ -35,7 +36,7 @@ def build_pages() -> dict:
                               url_path="evaluation"),
     })
     return {
-        "Demo": [PAGES["story"], PAGES["how_it_works"]],
+        "Demo": [PAGES["story"], PAGES["agent"], PAGES["how_it_works"]],
         "Operations": [PAGES["home"], PAGES["portfolio"], PAGES["priority_queue"], PAGES["loan_360"]],
         "Trust": [PAGES["agent_activity"], PAGES["evaluation"]],
     }

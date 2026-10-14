@@ -6,8 +6,8 @@ from fastapi.encoders import jsonable_encoder
 
 from src.agents.llm_client import LlmError
 from src.api.container import get_service, startup_warning
-from src.models.schemas import AgentRequest, BatchAgentRequest, DecisionRequest, EvaluationRequest
-from src.services import backend_status
+from src.models.schemas import AgentChatRequest, AgentRequest, BatchAgentRequest, DecisionRequest, EvaluationRequest
+from src.services import agent_endpoint, backend_status
 from src.services.servicing_service import InvalidState, LoanServicingService, NotFound, ValidationFailed
 
 app = FastAPI(title="Loan Servicing Intelligence API",
@@ -88,6 +88,19 @@ def agent(request: AgentRequest, service: LoanServicingService = Depends(svc)):
             raise HTTPException(status_code=422, detail="question is required for ask")
         return _handle(service.ask, request.question, request.loan_id, request.user_id, request.agent_mode)
     return _handle(service.briefing, request.agent_mode)
+
+
+@app.get("/api/agent/deployment")
+def agent_deployment(service: LoanServicingService = Depends(svc)):
+    return jsonable_encoder(agent_endpoint.deployment_status(service.settings))
+
+
+@app.post("/api/agent/deployed/chat")
+def agent_deployed_chat(request: AgentChatRequest):
+    try:
+        return agent_endpoint.chat(request.messages)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=503, detail=f"Deployed agent unavailable: {str(exc)[:300]}") from exc
 
 
 @app.post("/api/agent/batch")

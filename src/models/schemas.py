@@ -105,5 +105,9 @@ class BatchAgentRequest(BaseModel):
     agent_mode: Literal["auto", "llm", "deterministic"] | None = None
 
 
+class AgentChatRequest(BaseModel):
+    messages: list[dict]
+
+
 class EvaluationRequest(BaseModel):
     agent_mode: Literal["auto", "llm", "deterministic"] = "deterministic"

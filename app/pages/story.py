@@ -7,7 +7,7 @@ from app.components.styles import esc
 from app.components.talk_track import chapter_note, go_to_chapter, story
 
 PAGE_LABELS = {"home": "Home", "priority_queue": "Priority Queue", "loan_360": "Loan 360", "portfolio": "Portfolio",
-               "agent_activity": "Agent Activity", "evaluation": "Evaluation", "how_it_works": "How It Works"}
+               "agent_activity": "Agent Activity", "agent": "Meet the Agent", "evaluation": "Evaluation", "how_it_works": "How It Works"}
 
 
 def render() -> None:

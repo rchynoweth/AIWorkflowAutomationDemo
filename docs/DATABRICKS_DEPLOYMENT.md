@@ -67,6 +67,15 @@ Alternatively deploy with Databricks Asset Bundles (`databricks.yml`, also serve
 **paused** for cost control; unpause it in the Jobs UI on demo days. Agent triage processes up to 8 loans per
 run (widget `triage_limit`) and only loans without a current AI proposal, so steady-state runs make few LLM calls.
 
+## 4b. Deployed agent
+
+1. Register tools: `python scripts/register_uc_tools.py --warehouse-id <id>` (or notebook 05).
+2. Run `notebooks/11_deploy_agent.py` (serverless, widget `warehouse_id`): logs the ResponsesAgent, registers
+   `main.loan_servicing_intelligence.loan_servicing_agent`, deploys endpoint `loan-servicing-agent`
+   (scale-to-zero, about 15-20 minutes the first time).
+3. Re-run `scripts/deploy_app.py` so the app gets CAN_QUERY on the endpoint and EXECUTE on the schema.
+4. Before a demo, send one question from *Meet the Agent* or the Playground to wake the endpoint.
+
 ## 5. App
 
 `app.yaml` runs `streamlit run app/main.py`; Streamlit starts the in-process FastAPI on `127.0.0.1:8001`.

@@ -51,6 +51,15 @@ def main() -> None:
                              name=args.endpoint,
                              permission=apps.AppResourceServingEndpointServingEndpointPermission.CAN_QUERY)),
     ]
+    try:
+        w.serving_endpoints.get("loan-servicing-agent")
+        resources.append(apps.AppResource(
+            name="agent-endpoint", description="Deployed Loan Servicing Agent (Model Serving)",
+            serving_endpoint=apps.AppResourceServingEndpoint(
+                name="loan-servicing-agent",
+                permission=apps.AppResourceServingEndpointServingEndpointPermission.CAN_QUERY)))
+    except Exception:  # noqa: BLE001
+        print("NOTE: agent endpoint loan-servicing-agent not deployed yet (notebooks/11_deploy_agent.py)")
     for resource_name, job_name, permission in (
             ("monitor-job", "lsi-servicing-monitor", apps.AppResourceJobJobPermission.CAN_MANAGE_RUN),
             ("pipeline-job", "lsi-pipeline", apps.AppResourceJobJobPermission.CAN_VIEW)):
@@ -83,7 +92,8 @@ def main() -> None:
     print(f"Granting Unity Catalog privileges to app service principal {sp}")
     run_sql(w, args.warehouse_id, f"GRANT USE CATALOG ON CATALOG `{args.catalog}` TO `{sp}`")
     run_sql(w, args.warehouse_id,
-            f"GRANT USE SCHEMA, SELECT, MODIFY, CREATE TABLE ON SCHEMA `{args.catalog}`.`{args.schema}` TO `{sp}`")
+            f"GRANT USE SCHEMA, SELECT, MODIFY, CREATE TABLE, EXECUTE ON SCHEMA `{args.catalog}`.`{args.schema}` "
+            f"TO `{sp}`")
 
     try:  # lets the app link to its Git folder in the resource inventory
         repo = w.workspace.get_status(args.repo_path)
