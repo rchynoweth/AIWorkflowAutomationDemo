@@ -94,8 +94,12 @@ PROMPT = ("Review loan {loan_id}. Using your tools, explain in 3 to 5 short bull
           "action returned by lsi_get_allowed_actions.")
 
 
-def review(row) -> dict:
-    result = ask_agent(PROMPT.format(loan_id=row.loan_id), INSTRUCTIONS)
+def review(row) -> dict | None:
+    try:
+        result = ask_agent(PROMPT.format(loan_id=row.loan_id), INSTRUCTIONS)
+    except Exception as exc:  # one failed loan should not stop the batch
+        print(f"{row.loan_id}: agent call failed ({str(exc)[:120]})")
+        return None
     match = re.search(r"Recommended action:\s*\**([A-Z_]+)", result["answer"])
     return {"loan_id": row.loan_id, "priority": row.priority, "primary_condition": row.primary_condition,
             "attention_score": row.attention_score, "review": result["answer"],
@@ -105,13 +109,13 @@ def review(row) -> dict:
 
 
 with ThreadPoolExecutor(max_workers=4) as pool:
-    reviews = list(pool.map(review, queue))
-print(f"Agent reviewed {len(reviews)} loans")
+    reviews = [r for r in pool.map(review, queue) if r]
+print(f"Agent reviewed {len(reviews)} of {len(queue)} loans")
 
 # Fail loudly if the agent could not use its tools (for example, missing permissions) rather than saving
 # empty reviews.
 broken = [r["loan_id"] for r in reviews if r["tool_call_count"] == 0 or "INSUFFICIENT_PERMISSIONS" in r["review"]]
-if broken:
+if broken or not reviews:
     raise RuntimeError(f"The agent could not use its Unity Catalog tools for {broken}. Redeploy the agent "
                        "(notebook 06) after re-registering tools.")
 

@@ -53,11 +53,16 @@ TOOLS = load_tools()
 @mlflow.trace(span_type=SpanType.TOOL)
 def run_tool(name: str, arguments: dict) -> str:
     """Run a Unity Catalog function on the SQL warehouse and return its rows as JSON."""
-    tool = TOOLS[name]
+    tool = TOOLS.get(name)
+    if tool is None:  # the model asked for a tool that does not exist: tell it, so it can recover
+        return json.dumps({"error": f"Unknown tool {name}. Available tools: {', '.join(sorted(TOOLS))}"})
     args = ", ".join(repr(arguments.get(p)) for p in tool["params"])
-    result = w.statement_execution.execute_statement(
-        statement=f"SELECT * FROM {tool['full_name']}({args})", warehouse_id=config.get("warehouse_id"),
-        wait_timeout="50s")
+    try:
+        result = w.statement_execution.execute_statement(
+            statement=f"SELECT * FROM {tool['full_name']}({args})", warehouse_id=config.get("warehouse_id"),
+            wait_timeout="50s")
+    except Exception as exc:  # report the problem to the model instead of failing the request
+        return json.dumps({"error": str(exc)[:300]})
     if result.status.state.value != "SUCCEEDED":
         return json.dumps({"error": result.status.error.message if result.status.error else "query failed"})
     columns = [c.name for c in result.manifest.schema.columns]

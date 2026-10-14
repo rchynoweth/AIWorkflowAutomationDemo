@@ -100,11 +100,16 @@ ENDPOINT_NAME = "loan-servicing-agent"
 # MAGIC @mlflow.trace(span_type=SpanType.TOOL)
 # MAGIC def run_tool(name: str, arguments: dict) -> str:
 # MAGIC     """Run a Unity Catalog function on the SQL warehouse and return its rows as JSON."""
-# MAGIC     tool = TOOLS[name]
+# MAGIC     tool = TOOLS.get(name)
+# MAGIC     if tool is None:  # the model asked for a tool that does not exist: tell it, so it can recover
+# MAGIC         return json.dumps({"error": f"Unknown tool {name}. Available tools: {', '.join(sorted(TOOLS))}"})
 # MAGIC     args = ", ".join(repr(arguments.get(p)) for p in tool["params"])
-# MAGIC     result = w.statement_execution.execute_statement(
-# MAGIC         statement=f"SELECT * FROM {tool['full_name']}({args})", warehouse_id=config.get("warehouse_id"),
-# MAGIC         wait_timeout="50s")
+# MAGIC     try:
+# MAGIC         result = w.statement_execution.execute_statement(
+# MAGIC             statement=f"SELECT * FROM {tool['full_name']}({args})", warehouse_id=config.get("warehouse_id"),
+# MAGIC             wait_timeout="50s")
+# MAGIC     except Exception as exc:  # report the problem to the model instead of failing the request
+# MAGIC         return json.dumps({"error": str(exc)[:300]})
 # MAGIC     if result.status.state.value != "SUCCEEDED":
 # MAGIC         return json.dumps({"error": result.status.error.message if result.status.error else "query failed"})
 # MAGIC     columns = [c.name for c in result.manifest.schema.columns]
