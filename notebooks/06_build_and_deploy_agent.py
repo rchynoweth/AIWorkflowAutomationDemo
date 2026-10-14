@@ -119,6 +119,14 @@ ENDPOINT_NAME = "loan-servicing-agent"
 # MAGIC     return response["choices"][0]["message"]
 # MAGIC
 # MAGIC
+# MAGIC def text_of(message: dict) -> str:
+# MAGIC     """The model's text; some models return a list of content blocks (reasoning + text) instead of a string."""
+# MAGIC     content = message.get("content") or ""
+# MAGIC     if isinstance(content, list):
+# MAGIC         content = "".join(block.get("text", "") for block in content if block.get("type") == "text")
+# MAGIC     return content
+# MAGIC
+# MAGIC
 # MAGIC class LoanServicingAgent(ResponsesAgent):
 # MAGIC     def predict(self, request: ResponsesAgentRequest) -> ResponsesAgentResponse:
 # MAGIC         system = SYSTEM_PROMPT
@@ -131,9 +139,9 @@ ENDPOINT_NAME = "loan-servicing-agent"
 # MAGIC             message = call_llm(messages)
 # MAGIC             calls = message.get("tool_calls") or []
 # MAGIC             if not calls:                                      # no more tools needed: answer
-# MAGIC                 output.append(self.create_text_output_item(text=message.get("content") or "", id=str(uuid.uuid4())))
+# MAGIC                 output.append(self.create_text_output_item(text=text_of(message), id=str(uuid.uuid4())))
 # MAGIC                 break
-# MAGIC             messages.append({"role": "assistant", "content": message.get("content") or "", "tool_calls": calls})
+# MAGIC             messages.append({"role": "assistant", "content": text_of(message), "tool_calls": calls})
 # MAGIC             for call in calls:                                 # run each tool the model chose
 # MAGIC                 name, arguments = call["function"]["name"], call["function"].get("arguments") or "{}"
 # MAGIC                 result = run_tool(name, json.loads(arguments))

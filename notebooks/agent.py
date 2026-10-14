@@ -72,6 +72,14 @@ def call_llm(messages: list) -> dict:
     return response["choices"][0]["message"]
 
 
+def text_of(message: dict) -> str:
+    """The model's text; some models return a list of content blocks (reasoning + text) instead of a string."""
+    content = message.get("content") or ""
+    if isinstance(content, list):
+        content = "".join(block.get("text", "") for block in content if block.get("type") == "text")
+    return content
+
+
 class LoanServicingAgent(ResponsesAgent):
     def predict(self, request: ResponsesAgentRequest) -> ResponsesAgentResponse:
         system = SYSTEM_PROMPT
@@ -84,9 +92,9 @@ class LoanServicingAgent(ResponsesAgent):
             message = call_llm(messages)
             calls = message.get("tool_calls") or []
             if not calls:                                      # no more tools needed: answer
-                output.append(self.create_text_output_item(text=message.get("content") or "", id=str(uuid.uuid4())))
+                output.append(self.create_text_output_item(text=text_of(message), id=str(uuid.uuid4())))
                 break
-            messages.append({"role": "assistant", "content": message.get("content") or "", "tool_calls": calls})
+            messages.append({"role": "assistant", "content": text_of(message), "tool_calls": calls})
             for call in calls:                                 # run each tool the model chose
                 name, arguments = call["function"]["name"], call["function"].get("arguments") or "{}"
                 result = run_tool(name, json.loads(arguments))
