@@ -12,19 +12,31 @@
 4. Open these tabs in Databricks: the latest `lsi-pipeline` run, notebook `07_ai_functions`, notebook
    `08_agent_reviews`, the `loan-servicing-agent` serving endpoint, and the `lsi_*` functions in Catalog Explorer.
 
-## Storyline
+## Storyline: two sides of AI on Databricks
 
-| # | Where | Show | Say (story) | Say (Databricks) |
-|---|-------|------|-------------|------------------|
-| 1 | App - How It Works | Diagram, "Where the AI is created" | Specialists used to review loans one at a time. Here the whole portfolio is evaluated and explained before anyone logs in. | One serverless Workflow does it all: Bronze/Silver/Gold, rules, AI Functions, agent reviews. |
-| 2 | Databricks - Workflow run | Task graph: generate, bronze, silver, gold, ai_functions, agent_reviews; then notebooks 05 (tools) and 06 (agent) | This is the backend running. | Serverless Jobs: no clusters, nothing running between runs. |
-| 3 | Databricks - notebook 07 | The `ai_query` SQL cell and its output | The rules found the facts; one SQL function turns them into plain language. | AI Functions: `ai_query` over a governed Gold table, written back to Gold. |
-| 4 | Databricks - notebook 08 | `ask_agent`, the tool chain printed, the reviews table | The agent investigates the top of the queue overnight. | The deployed agent is one HTTP call; reviews land in Unity Catalog. |
-| 5 | App - Portfolio | AI briefing, AI summary and Agent review columns | Specialists open the app and the investigation is already done. | The app just reads Gold through a serverless SQL warehouse. |
-| 6 | App - Loan `LSI-SYN-000006` | Rule facts (left), backend AI (right) | Facts with rule IDs on the left; what the AI backend concluded on the right. | Deterministic rules plus AI, all governed. |
-| 7 | App - Loan, **Run AI analysis now** | Live tool chain and answer; ask a follow-up | Ask the agent anything about this loan, live. It recommends; people decide. | Model Serving + Unity Catalog tools + MLflow tracing. |
-| 8 | App - The Agent, then Databricks | Tool catalog; open one `lsi_*` function; serving endpoint; Playground | These 17 governed functions are the agent's toolset. | Mosaic AI Agent Framework, registered model, scale-to-zero, traces. |
-| 9 | Close | — | Agents investigate, people decide, the servicing platform stays the System of Record. | One governed platform for data, AI, and the app. |
+**Part A - the notebooks (open them in this order).** Each notebook is short and shows its work inline.
+
+| # | Notebook | Show | Say |
+|---|----------|------|-----|
+| 1 | `01_generate_demo_data` | Volume listing, sample rows | Servicing exports land in a governed Unity Catalog volume (synthetic here). |
+| 2 | `02_ingest_bronze` | One short Spark cell | Raw copy plus lineage: every fact traces back to its file. |
+| 3 | `03_build_silver` | SQL cells | Typed, de-duplicated, sequenced, quality-flagged - in plain SQL. |
+| 4 | `04_build_gold` | The one-loan walkthrough cell | Rules are configuration; every loan gets conditions, a score with its drivers, and allowed actions. |
+| 5 | `05_agent_tools` | Two or three `CREATE FUNCTION` cells | **This is where the agent's tools are defined**: governed SQL functions whose comments tell the model when to use them. |
+| 6 | `06_build_and_deploy_agent` | The agent cell, the test output, `log_model`, `agents.deploy` | **This is the whole agent**: about 100 lines. Test it, register it in Unity Catalog, deploy it with one call. Custom instructions steer it per request. |
+| 7 | `07_ai_functions` | The `ai_query` cell and results | Batch AI in SQL: summaries for every priority loan. |
+| 8 | `08_agent_reviews` | Tool chain printed, reviews table | Batch agent: it investigates the top of the queue before anyone logs in. |
+| 9 | Workflow run | Task graph `generate -> bronze -> silver -> gold -> ai_functions -> agent_reviews` | All of it runs as one serverless workflow on a schedule. |
+
+**Part B - the app (on demand).**
+
+| # | Page | Show | Say |
+|---|------|------|-----|
+| 10 | Portfolio | Briefing, AI summary and Agent review columns | The batch side's results, ready for specialists. |
+| 11 | Loan `LSI-SYN-000006` | Rule facts and backend AI side by side | Facts with rule IDs; what the backend AI concluded. |
+| 12 | Loan - **Run AI analysis now** | Live tool chain | The on-demand side: the same agent, live. |
+| 13 | Loan - custom instruction "Draft an email to the assigned attorney" | The email in the answer | Augment the agent per request without redeploying. |
+| 14 | The Agent | Tool catalog, links to Serving, Playground, Unity Catalog | Governed tools, registered model, traces. |
 
 ## Fallbacks
 

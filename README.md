@@ -60,7 +60,8 @@ app/                 Streamlit Databricks App: main, navigation, client, ui, pag
 config/              application, business rules, scoring, escalation, allowed actions, demo scenarios, talk track
 data/generated/      synthetic CSV exports (committed, reproducible)
 docs/                product, architecture, data, rules, agent, API, UX, evaluation, demo, deployment docs
-notebooks/           01-07 lsi-pipeline workflow (06 AI Functions, 07 agent reviews), 08 deploy agent
+notebooks/           01-04 data and rules, 05 agent tools (UC functions), 06 build and deploy the agent,
+                     07 AI Functions, 08 agent reviews; agent.py is written by notebook 06
 scripts/             job creation, app and agent deployment, UC tool registration
 sql/                 Bronze/Silver/Gold DDL and views
 tests/               unit, integration, end_to_end
