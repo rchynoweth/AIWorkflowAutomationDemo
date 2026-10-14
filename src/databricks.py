@@ -141,7 +141,7 @@ def resource_inventory(settings) -> dict:
         entities = w.serving_endpoints.get(ENDPOINT_NAME).config.served_entities or []
         experiment_id = next((e.environment_vars or {}).get("MLFLOW_EXPERIMENT_ID") for e in entities
                              if (e.environment_vars or {}).get("MLFLOW_EXPERIMENT_ID"))
-        add("Agent", "Traces and monitoring", f"/ml/experiments/{experiment_id}",
+        add("Agent", "Traces and monitoring", f"/ml/experiments/{experiment_id}/traces",
             "MLflow experiment: every request traced, judges scoring production traffic")
     except Exception:  # noqa: BLE001
         pass
